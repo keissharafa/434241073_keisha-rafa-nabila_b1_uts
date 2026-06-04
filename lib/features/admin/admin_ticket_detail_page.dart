@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/ticket_service.dart';
 
 class AdminTicketDetailPage extends StatefulWidget {
   final Map<String, dynamic> ticket;
@@ -16,10 +17,13 @@ class AdminTicketDetailPage extends StatefulWidget {
 
 class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
   final TextEditingController _commentController = TextEditingController();
+  final TicketService _ticketService = TicketService();
 
   String _selectedStatus = "IN PROGRESS";
   String _selectedFinalPriority = "HIGH";
   String _selectedAssignedTo = "IT Support";
+
+  bool isUpdating = false;
 
   final List<String> _statusOptions = [
     "OPEN",
@@ -36,14 +40,16 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
     "DevOps Team",
   ];
 
-  /// Auto-suggest assigned team based on ticket category
   String _suggestTeamFromCategory(String? category) {
     if (category == null) return "IT Support";
+
     final lower = category.toLowerCase();
+
     if (lower.contains("network")) return "Network Team";
     if (lower.contains("software")) return "DevOps Team";
     if (lower.contains("hardware")) return "IT Support";
     if (lower.contains("technical")) return "IT Support";
+
     return "IT Support";
   }
 
@@ -78,26 +84,94 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
   void initState() {
     super.initState();
 
-    // Inisialisasi status & priority dari data ticket jika ada
-    _selectedStatus =
-        widget.ticket["status"] ?? "IN PROGRESS";
-    _selectedFinalPriority =
-        widget.ticket["priority"] ?? "HIGH";
+    _selectedStatus = widget.ticket["status"] ?? "IN PROGRESS";
+    _selectedFinalPriority = widget.ticket["priority"] ?? "HIGH";
 
-    // Auto-suggest assigned to berdasarkan category
     final suggested = _suggestTeamFromCategory(widget.ticket["category"]);
-    _selectedAssignedTo =
-        widget.ticket["assignedTo"] ?? suggested;
+    _selectedAssignedTo = widget.ticket["assignedTo"] ?? suggested;
 
-    // Pastikan nilai valid ada di list opsi
     if (!_statusOptions.contains(_selectedStatus)) {
       _selectedStatus = "IN PROGRESS";
     }
+
     if (!_priorityOptions.contains(_selectedFinalPriority)) {
       _selectedFinalPriority = "HIGH";
     }
+
     if (!_assignedToOptions.contains(_selectedAssignedTo)) {
       _selectedAssignedTo = "IT Support";
+    }
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _updateTicketToSupabase() async {
+    if (isUpdating) return;
+
+    final dbId = widget.ticket["dbId"];
+
+    if (dbId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Failed to update ticket: missing database ID"),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => isUpdating = true);
+
+    try {
+      final updatedTicket = await _ticketService.updateTicket(
+        id: dbId is int ? dbId : int.parse(dbId.toString()),
+        status: _selectedStatus,
+        priority: _selectedFinalPriority,
+        assignedTo: _selectedAssignedTo,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white, size: 18),
+              SizedBox(width: 10),
+              Text("Ticket updated successfully"),
+            ],
+          ),
+          backgroundColor: const Color(0xFF16A34A),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(milliseconds: 1200),
+        ),
+      );
+
+      Future.delayed(const Duration(milliseconds: 400), () {
+        if (!mounted) return;
+        Navigator.pop(context, updatedTicket);
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Failed to update ticket: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => isUpdating = false);
+      }
     }
   }
 
@@ -105,15 +179,14 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor       = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
-    final cardColor     = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final textPrimary   = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
+    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
+    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final textPrimary = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
     final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-    final borderColor   = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-    final labelColor    = isDark ? const Color(0xFF94A3B8) : const Color(0xFF94A3B8);
-    final dropdownBg    = isDark ? const Color(0xFF0F172A) : const Color(0xFFEEF2FF);
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final labelColor = const Color(0xFF94A3B8);
+    final dropdownBg = isDark ? const Color(0xFF0F172A) : const Color(0xFFEEF2FF);
 
-    // Auto-suggest label (untuk hint di bawah dropdown)
     final suggestedTeam = _suggestTeamFromCategory(widget.ticket["category"]);
 
     return Scaffold(
@@ -121,8 +194,7 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
       body: SafeArea(
         child: Column(
           children: [
-
-            // ─── HEADER ───────────────────────────────────────────────
+            // HEADER
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
               color: isDark ? const Color(0xFF1E293B) : Colors.white,
@@ -156,12 +228,10 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
               ),
             ),
 
-            // ─── SCROLLABLE CONTENT ───────────────────────────────────
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 children: [
-
                   // ID + TITLE
                   Text(
                     widget.ticket["id"] ?? "#TK-8821",
@@ -173,8 +243,7 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    widget.ticket["title"] ??
-                        "I can’t log in on the mobile app",
+                    widget.ticket["title"] ?? "I can’t log in on the mobile app",
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -186,7 +255,7 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
 
                   const SizedBox(height: 20),
 
-                  // ─── ORIGINAL REPORT ──────────────────────────────
+                  // ORIGINAL REPORT
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -199,8 +268,11 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.description_outlined,
-                                size: 14, color: labelColor),
+                            Icon(
+                              Icons.description_outlined,
+                              size: 14,
+                              color: labelColor,
+                            ),
                             const SizedBox(width: 6),
                             Text(
                               "ORIGINAL REPORT",
@@ -216,9 +288,9 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                         const SizedBox(height: 12),
                         Text(
                           widget.ticket["description"] ??
-                              "I’m experiencing delays when making payments in the app."
-                              "Sometimes the payment takes too long to process or fails completely. "
-                              "This started happening recently after the latest update.",
+                              "I’m experiencing delays when making payments in the app. "
+                                  "Sometimes the payment takes too long to process or fails completely. "
+                                  "This started happening recently after the latest update.",
                           style: TextStyle(
                             height: 1.6,
                             fontSize: 13,
@@ -231,13 +303,14 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
 
                   const SizedBox(height: 20),
 
-                  // ─── STATUS DROPDOWN ──────────────────────────────
+                  // STATUS DROPDOWN
                   Text(
                     "Status",
                     style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: textSecondary),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: textSecondary,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   _buildDropdown(
@@ -246,15 +319,17 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                     bg: dropdownBg,
                     textColor: _statusTextColor(_selectedStatus),
                     fontWeight: FontWeight.bold,
-                    onChanged: (v) => setState(() => _selectedStatus = v!),
+                    onChanged: (v) {
+                      if (v == null) return;
+                      setState(() => _selectedStatus = v);
+                    },
                   ),
 
                   const SizedBox(height: 16),
 
-                  // ─── PRIORITY ROW ─────────────────────────────────
+                  // PRIORITY ROW
                   Row(
                     children: [
-                      // Requested Priority (read-only badge)
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -262,21 +337,24 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                             Text(
                               "Requested Priority",
                               style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: textSecondary),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: textSecondary,
+                              ),
                             ),
                             const SizedBox(height: 8),
                             Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(
-                                  vertical: 16, horizontal: 14),
+                                vertical: 16,
+                                horizontal: 14,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFEE2E2),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                widget.ticket["requestedPriority"] ?? "URGENT",
+                                widget.ticket["requestedPriority"] ?? "-",
                                 style: const TextStyle(
                                   color: Color(0xFFEF4444),
                                   fontWeight: FontWeight.bold,
@@ -288,7 +366,6 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      // Final Priority dropdown
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -296,9 +373,10 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                             Text(
                               "Final Priority",
                               style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: textSecondary),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: textSecondary,
+                              ),
                             ),
                             const SizedBox(height: 8),
                             _buildDropdown(
@@ -307,8 +385,10 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                               bg: dropdownBg,
                               textColor: textPrimary,
                               fontWeight: FontWeight.w600,
-                              onChanged: (v) =>
-                                  setState(() => _selectedFinalPriority = v!),
+                              onChanged: (v) {
+                                if (v == null) return;
+                                setState(() => _selectedFinalPriority = v);
+                              },
                             ),
                           ],
                         ),
@@ -318,7 +398,7 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
 
                   const SizedBox(height: 16),
 
-                  // ─── CATEGORY + SUGGESTED ROLE ────────────────────
+                  // CATEGORY + SUGGESTED ROLE
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -335,18 +415,20 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                               Text(
                                 "CATEGORY",
                                 style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    color: labelColor,
-                                    letterSpacing: 0.8),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: labelColor,
+                                  letterSpacing: 0.8,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 widget.ticket["category"] ?? "Technical Support",
                                 style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: textPrimary),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: textPrimary,
+                                ),
                               ),
                             ],
                           ),
@@ -361,18 +443,20 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                                 Text(
                                   "SUGGESTED ROLE",
                                   style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                      color: labelColor,
-                                      letterSpacing: 0.8),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: labelColor,
+                                    letterSpacing: 0.8,
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   suggestedTeam,
                                   style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: textPrimary),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: textPrimary,
+                                  ),
                                 ),
                               ],
                             ),
@@ -384,22 +468,24 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
 
                   const SizedBox(height: 16),
 
-                  // ─── ASSIGNED TO (DROPDOWN) ───────────────────────
+                  // ASSIGNED TO
                   Row(
                     children: [
                       Text(
                         "Assigned To",
                         style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: textSecondary),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: textSecondary,
+                        ),
                       ),
                       const SizedBox(width: 8),
-                      // Badge "auto-suggested" jika nilai = suggestedTeam
                       if (_selectedAssignedTo == suggestedTeam)
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFDBEAFE),
                             borderRadius: BorderRadius.circular(20),
@@ -421,13 +507,15 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                     items: _assignedToOptions,
                     bg: dropdownBg,
                     textColor: textPrimary,
-                    labelColor: labelColor,
-                    onChanged: (v) => setState(() => _selectedAssignedTo = v!),
+                    onChanged: (v) {
+                      if (v == null) return;
+                      setState(() => _selectedAssignedTo = v);
+                    },
                   ),
 
                   const SizedBox(height: 20),
 
-                  // ─── UPDATE TICKET BUTTON ─────────────────────────
+                  // UPDATE BUTTON
                   SizedBox(
                     width: double.infinity,
                     height: 52,
@@ -437,56 +525,31 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
-                      onPressed: () {
-                        final updatedTicket = {
-                          ...widget.ticket,
-                          "status": _selectedStatus,
-                          "priority": _selectedFinalPriority,
-                          "assignedTo": _selectedAssignedTo,
-                        };
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Row(
-                              children: [
-                                Icon(Icons.check_circle,
-                                    color: Colors.white, size: 18),
-                                SizedBox(width: 10),
-                                Text("Ticket updated successfully"),
-                              ],
+                      onPressed: isUpdating ? null : _updateTicketToSupabase,
+                      child: isUpdating
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              "Update Ticket",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                            backgroundColor: const Color(0xFF16A34A),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                            margin: const EdgeInsets.all(16),
-                            duration: const Duration(milliseconds: 1200),
-                          ),
-                        );
-
-                        // Delay pop sedikit biar snackbar keliatan dulu
-                        Future.delayed(
-                          const Duration(milliseconds: 400),
-                          () {
-                            if (context.mounted) {
-                              Navigator.pop(context, updatedTicket);
-                            }
-                          },
-                        );
-                      },
-                      child: const Text(
-                        "Update Ticket",
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
                     ),
                   ),
 
                   const SizedBox(height: 28),
 
-                  // ─── CONVERSATION THREAD LABEL ────────────────────
                   Center(
                     child: Text(
                       "CONVERSATION THREAD",
@@ -501,9 +564,13 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
 
                   const SizedBox(height: 20),
 
-                  // ─── CHAT BUBBLES ─────────────────────────────────
                   ..._comments.map(
-                    (c) => _buildChatBubble(c, isDark, cardColor, textSecondary),
+                    (c) => _buildChatBubble(
+                      c,
+                      isDark,
+                      cardColor,
+                      textSecondary,
+                    ),
                   ),
 
                   const SizedBox(height: 8),
@@ -511,7 +578,7 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
               ),
             ),
 
-            // ─── COMMENT INPUT ────────────────────────────────────────
+            // COMMENT INPUT
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
@@ -531,8 +598,7 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                       style: TextStyle(fontSize: 14, color: textPrimary),
                       decoration: InputDecoration(
                         hintText: "Add a comment...",
-                        hintStyle:
-                            TextStyle(color: labelColor, fontSize: 14),
+                        hintStyle: TextStyle(color: labelColor, fontSize: 14),
                         border: InputBorder.none,
                         isDense: true,
                         contentPadding: EdgeInsets.zero,
@@ -550,6 +616,7 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                     child: IconButton(
                       onPressed: () {
                         if (_commentController.text.trim().isEmpty) return;
+
                         setState(() {
                           _comments.add({
                             "sender": "admin",
@@ -561,8 +628,11 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                           _commentController.clear();
                         });
                       },
-                      icon: const Icon(Icons.send_rounded,
-                          color: Colors.white, size: 20),
+                      icon: const Icon(
+                        Icons.send_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                   ),
                 ],
@@ -574,7 +644,6 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
     );
   }
 
-  // ─── CHAT BUBBLE ────────────────────────────────────────────────────
   Widget _buildChatBubble(
     Map<String, dynamic> c,
     bool isDark,
@@ -601,7 +670,9 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: isAdmin
                         ? const Color(0xFF2563EB)
@@ -645,15 +716,12 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
     );
   }
 
-  // ─── AVATAR ─────────────────────────────────────────────────────────
   Widget _avatar(bool isAdmin) {
     return Container(
       width: 36,
       height: 36,
       decoration: BoxDecoration(
-        color: isAdmin
-            ? const Color(0xFF1E293B)
-            : const Color(0xFFF59E0B),
+        color: isAdmin ? const Color(0xFF1E293B) : const Color(0xFFF59E0B),
         shape: BoxShape.circle,
       ),
       child: Icon(
@@ -664,7 +732,6 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
     );
   }
 
-  // ─── DROPDOWN BUILDER (basic) ────────────────────────────────────────
   Widget _buildDropdown({
     required String value,
     required List<String> items,
@@ -683,8 +750,10 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
         child: DropdownButton<String>(
           value: value,
           isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded,
-              color: Color(0xFF475569)),
+          icon: const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: Color(0xFF475569),
+          ),
           dropdownColor: bg,
           borderRadius: BorderRadius.circular(12),
           style: TextStyle(
@@ -692,25 +761,26 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
             fontWeight: fontWeight,
             color: textColor,
           ),
-          items: items
-              .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-              .toList(),
+          items: items.map((item) {
+            return DropdownMenuItem(
+              value: item,
+              child: Text(item),
+            );
+          }).toList(),
           onChanged: onChanged,
         ),
       ),
     );
   }
 
-  // ─── DROPDOWN BUILDER (with team icon) ──────────────────────────────
   Widget _buildDropdownWithIcon({
     required String value,
     required List<String> items,
     required Color bg,
     required Color textColor,
-    required Color labelColor,
     required ValueChanged<String?> onChanged,
   }) {
-    IconData _teamIcon(String team) {
+    IconData teamIcon(String team) {
       switch (team) {
         case "Network Team":
           return Icons.router_outlined;
@@ -731,35 +801,39 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
         child: DropdownButton<String>(
           value: value,
           isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded,
-              color: Color(0xFF475569)),
+          icon: const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: Color(0xFF475569),
+          ),
           dropdownColor: bg,
           borderRadius: BorderRadius.circular(12),
-          selectedItemBuilder: (context) => items.map((e) {
-            return Row(
-              children: [
-                Icon(_teamIcon(e), size: 18, color: const Color(0xFF2563EB)),
-                const SizedBox(width: 10),
-                Text(
-                  e,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: textColor,
-                  ),
-                ),
-              ],
-            );
-          }).toList(),
-          items: items.map((e) {
-            return DropdownMenuItem(
-              value: e,
-              child: Row(
+          selectedItemBuilder: (context) {
+            return items.map((item) {
+              return Row(
                 children: [
-                  Icon(_teamIcon(e), size: 18, color: const Color(0xFF2563EB)),
+                  Icon(teamIcon(item), size: 18, color: const Color(0xFF2563EB)),
                   const SizedBox(width: 10),
                   Text(
-                    e,
+                    item,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: textColor,
+                    ),
+                  ),
+                ],
+              );
+            }).toList();
+          },
+          items: items.map((item) {
+            return DropdownMenuItem(
+              value: item,
+              child: Row(
+                children: [
+                  Icon(teamIcon(item), size: 18, color: const Color(0xFF2563EB)),
+                  const SizedBox(width: 10),
+                  Text(
+                    item,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -776,14 +850,18 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
     );
   }
 
-  // ─── STATUS COLOR ────────────────────────────────────────────────────
   Color _statusTextColor(String status) {
     switch (status) {
-      case "OPEN":        return const Color(0xFFEF4444);
-      case "IN PROGRESS": return const Color(0xFF2563EB);
-      case "PENDING":     return const Color(0xFFF97316);
-      case "RESOLVED":    return const Color(0xFF16A34A);
-      default:            return const Color(0xFF0F172A);
+      case "OPEN":
+        return const Color(0xFFEF4444);
+      case "IN PROGRESS":
+        return const Color(0xFF2563EB);
+      case "PENDING":
+        return const Color(0xFFF97316);
+      case "RESOLVED":
+        return const Color(0xFF16A34A);
+      default:
+        return const Color(0xFF0F172A);
     }
   }
 }

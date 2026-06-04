@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/ticket_service.dart';
 
 class CreateTicketPage extends StatefulWidget {
   final Function(bool)? toggleTheme;
@@ -6,15 +7,18 @@ class CreateTicketPage extends StatefulWidget {
   const CreateTicketPage({super.key, this.toggleTheme});
 
   @override
-  _CreateTicketPageState createState() => _CreateTicketPageState();
+  State<CreateTicketPage> createState() => _CreateTicketPageState();
 }
 
 class _CreateTicketPageState extends State<CreateTicketPage> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descController = TextEditingController();
 
+  final TicketService _ticketService = TicketService();
+
   String selectedCategory = "Technical Support";
   String selectedPriority = "Med";
+  bool isSubmitting = false;
 
   final List<String> categories = [
     "Technical Support",
@@ -25,25 +29,65 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
   ];
 
   @override
+  void dispose() {
+    titleController.dispose();
+    descController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitTicket() async {
+    if (isSubmitting) return;
+
+    setState(() => isSubmitting = true);
+
+    try {
+      final insertedTicket = await _ticketService.createTicket(
+        title: titleController.text.trim().isEmpty
+            ? "Untitled Ticket"
+            : titleController.text.trim(),
+        category: selectedCategory,
+        description: descController.text.trim(),
+        requestedPriority: selectedPriority.toUpperCase(),
+      );
+
+      if (context.mounted) {
+        Navigator.pop(context, insertedTicket);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Failed to submit ticket: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isSubmitting = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // ── Color tokens ──────────────────────────────────────────────────
-    final bgColor       = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
-    final cardColor     = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final textPrimary   = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
+    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
+    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final textPrimary = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
     final textSecondary = isDark ? const Color(0xFF94A3B8) : Colors.grey[500]!;
-    final fieldBg       = isDark ? const Color(0xFF1E293B) : const Color(0xFFEEF2FF);
-    final hintColor     = isDark ? const Color(0xFF475569) : Colors.grey[400]!;
-    final borderColor   = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-    final labelColor    = const Color(0xFF94A3B8);
-    final dropdownBg    = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final navBg         = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final fieldBg = isDark ? const Color(0xFF1E293B) : const Color(0xFFEEF2FF);
+    final hintColor = isDark ? const Color(0xFF64748B) : Colors.grey[400]!;
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final labelColor = const Color(0xFF94A3B8);
+    final dropdownBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final navBg = isDark ? const Color(0xFF1E293B) : Colors.white;
 
     return Scaffold(
       backgroundColor: bgColor,
 
-      // ─── SUBMIT BUTTON (fixed bottom) ─────────────────────────────
+      // ─── SUBMIT BUTTON FIXED BOTTOM ─────────────────────────────
       bottomNavigationBar: SafeArea(
         child: Container(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
@@ -66,36 +110,31 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  onPressed: () {
-                    final newTicket = {
-                      "id": "#TK-${DateTime.now().millisecondsSinceEpoch % 10000}",
-                      "title": titleController.text.isEmpty
-                          ? "Untitled Ticket"
-                          : titleController.text,
-                      "status": "OPEN",
-                      "description": descController.text,
-                      "category": selectedCategory,
-                      "priority": selectedPriority.toUpperCase(),
-                      "requestedPriority": selectedPriority.toUpperCase(),
-                      "date": _formattedDate(),
-                    };
-                    Navigator.pop(context, newTicket);
-                  },
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        "Submit Ticket",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.2,
+                  onPressed: isSubmitting ? null : _submitTicket,
+                  child: isSubmitting
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Submit Ticket",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                            SizedBox(width: 10),
+                            Icon(Icons.send_rounded, size: 18),
+                          ],
                         ),
-                      ),
-                      SizedBox(width: 10),
-                      Icon(Icons.send_rounded, size: 18),
-                    ],
-                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -118,7 +157,6 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               // ─── HEADER ─────────────────────────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -171,7 +209,7 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
 
               const SizedBox(height: 28),
 
-              // ─── PAGE TITLE ──────────────────────────────────────────
+              // ─── PAGE TITLE ─────────────────────────────────────────
               Text(
                 "Create Ticket",
                 style: TextStyle(
@@ -233,14 +271,15 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                     ),
                     dropdownColor: dropdownBg,
                     borderRadius: BorderRadius.circular(14),
-                    items: categories.map((e) {
+                    items: categories.map((category) {
                       return DropdownMenuItem(
-                        value: e,
-                        child: Text(e),
+                        value: category,
+                        child: Text(category),
                       );
                     }).toList(),
                     onChanged: (value) {
-                      setState(() => selectedCategory = value!);
+                      if (value == null) return;
+                      setState(() => selectedCategory = value);
                     },
                   ),
                 ),
@@ -275,16 +314,15 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
 
                     return Expanded(
                       child: GestureDetector(
-                        onTap: () =>
-                            setState(() => selectedPriority = priority),
+                        onTap: () {
+                          setState(() => selectedPriority = priority);
+                        },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
                           padding: const EdgeInsets.symmetric(vertical: 11),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? (isDark
-                                    ? const Color(0xFF334155)
-                                    : Colors.white)
+                                ? (isDark ? const Color(0xFF334155) : Colors.white)
                                 : Colors.transparent,
                             borderRadius: BorderRadius.circular(10),
                             boxShadow: isSelected && !isDark
@@ -293,7 +331,7 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                                       color: Colors.black.withOpacity(0.06),
                                       blurRadius: 6,
                                       offset: const Offset(0, 2),
-                                    )
+                                    ),
                                   ]
                                 : [],
                           ),
@@ -301,9 +339,7 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                             child: Text(
                               priority,
                               style: TextStyle(
-                                color: isSelected
-                                    ? selectedTextColor
-                                    : labelColor,
+                                color: isSelected ? selectedTextColor : labelColor,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
@@ -318,7 +354,7 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
 
               const SizedBox(height: 20),
 
-              // ─── DESCRIPTION ─────────────────────────────────────────
+              // ─── DESCRIPTION ────────────────────────────────────────
               _fieldLabel("DESCRIPTION"),
               const SizedBox(height: 8),
               _buildTextField(
@@ -332,7 +368,7 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
 
               const SizedBox(height: 28),
 
-              // ─── ATTACHMENT ──────────────────────────────────────────
+              // ─── ATTACHMENT ─────────────────────────────────────────
               _fieldLabel("ATTACHMENT"),
               const SizedBox(height: 8),
               Row(
@@ -351,16 +387,16 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                               ? Border.all(color: const Color(0xFF334155))
                               : null,
                         ),
-                        child: Column(
+                        child: const Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
                               Icons.folder_open_outlined,
-                              color: const Color(0xFF2563EB),
+                              color: Color(0xFF2563EB),
                               size: 28,
                             ),
-                            const SizedBox(height: 8),
-                            const Text(
+                            SizedBox(height: 8),
+                            Text(
                               "Upload from\nGallery",
                               textAlign: TextAlign.center,
                               style: TextStyle(
@@ -425,26 +461,17 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
     );
   }
 
-  // ─── HELPERS ────────────────────────────────────────────────────────
-
-  String _formattedDate() {
-    final now = DateTime.now();
-    const months = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-    ];
-    return "${months[now.month - 1]} ${now.day}, ${now.year}";
+  Widget _fieldLabel(String label) {
+    return Text(
+      label,
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF94A3B8),
+        letterSpacing: 1.0,
+      ),
+    );
   }
-
-  Widget _fieldLabel(String label) => Text(
-        label,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: Color(0xFF94A3B8),
-          letterSpacing: 1.0,
-        ),
-      );
 
   Widget _buildTextField({
     required TextEditingController controller,
@@ -466,8 +493,10 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
         hintStyle: TextStyle(color: hintColor, fontSize: 14),
         filled: true,
         fillColor: fieldBg,
-        contentPadding:
-            const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 16,
+          horizontal: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
@@ -478,7 +507,10 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
+          borderSide: const BorderSide(
+            color: Color(0xFF2563EB),
+            width: 1.5,
+          ),
         ),
       ),
     );

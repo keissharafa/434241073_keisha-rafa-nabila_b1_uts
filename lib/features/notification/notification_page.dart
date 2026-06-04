@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import '../dashboard/dashboard_page.dart';
 import '../ticket/ticket_list_page.dart';
 import '../profile/profile_page.dart';
+import '../../services/ticket_service.dart';
 
-class NotificationPage extends StatelessWidget {
+class NotificationPage extends StatefulWidget {
   final Function(bool)? toggleTheme;
 
   const NotificationPage({
@@ -12,289 +13,380 @@ class NotificationPage extends StatelessWidget {
   });
 
   @override
+  State<NotificationPage> createState() => _NotificationPageState();
+}
+
+class _NotificationPageState extends State<NotificationPage> {
+  final TicketService _ticketService = TicketService();
+
+  List<Map<String, dynamic>> _notifications = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+  }
+
+  Future<void> _loadNotifications() async {
+    try {
+      final data = await _ticketService.getNotifications(
+        roleTarget: "user",
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _notifications = data.map((notif) {
+          return {
+            "id": notif["id"],
+            "title": notif["title"] ?? "Notification",
+            "message": notif["message"] ?? "-",
+            "status": notif["status"] ?? "INFO",
+            "type": notif["notification_type"] ?? "info",
+            "time": _timeAgo(notif["created_at"]),
+            "isRead": notif["is_read"] ?? false,
+          };
+        }).toList();
+
+        isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() => isLoading = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Failed to load notifications: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  String _timeAgo(dynamic rawDate) {
+    if (rawDate == null) return "Just now";
+
+    try {
+      final createdAt = DateTime.parse(rawDate.toString()).toLocal();
+      final now = DateTime.now();
+      final diff = now.difference(createdAt);
+
+      if (diff.inMinutes < 1) return "Just now";
+      if (diff.inMinutes < 60) return "${diff.inMinutes} mins ago";
+      if (diff.inHours < 24) return "${diff.inHours} hours ago";
+      return "${diff.inDays} days ago";
+    } catch (_) {
+      return "Just now";
+    }
+  }
+
+  IconData _notifIcon(String type, String status) {
+    if (type == "ticket_update") return Icons.people_outline;
+    if (status == "RESOLVED") return Icons.check_circle_outline;
+    if (status == "PENDING") return Icons.hourglass_bottom_rounded;
+    if (status == "IN PROGRESS") return Icons.access_time;
+    if (status == "OPEN") return Icons.article_outlined;
+    return Icons.notifications_none;
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case "OPEN":
+        return const Color(0xFFEF4444);
+      case "PENDING":
+        return const Color(0xFFF97316);
+      case "IN PROGRESS":
+        return const Color(0xFFBC4800);
+      case "RESOLVED":
+        return const Color(0xFF16A34A);
+      default:
+        return const Color(0xFF475569);
+    }
+  }
+
+  Color _statusBg(String status, bool isDark) {
+    switch (status) {
+      case "OPEN":
+        return isDark ? const Color(0xFF3B0A0A) : const Color(0xFFFEE2E2);
+      case "PENDING":
+        return isDark
+            ? const Color.fromRGBO(67, 20, 7, 0.5)
+            : const Color(0xFFFFF7ED);
+      case "IN PROGRESS":
+        return isDark ? const Color.fromRGBO(67, 20, 7, 0.5) : const Color(0xFFFFF0E6);
+      case "RESOLVED":
+        return isDark
+            ? const Color.fromRGBO(20, 83, 45, 0.4)
+            : const Color(0xFFF0FDF4);
+      default:
+        return isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9);
+    }
+  }
+
+  int get _activeNotifCount {
+    return _notifications.where((n) => n["status"] != "RESOLVED").length;
+  }
+
+  int get _unreadCount {
+    return _notifications.where((n) => n["isRead"] == false).length;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor     = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
-    final cardColor   = isDark ? const Color(0xFF1E293B) : Colors.white;
+
+    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
+    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
     final textPrimary = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
     final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-    final navBg       = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final navBg = isDark ? const Color(0xFF1E293B) : Colors.white;
 
     return Scaffold(
       backgroundColor: bgColor,
-
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          children: [
-
-            // 🔝 HEADER
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _loadNotifications,
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1E293B),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.confirmation_num,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    const Text(
-                      "Concierge",
-                      style: TextStyle(
-                        color: Color(0xFF2563EB),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: cardColor,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: borderColor),
-                  ),
-                  child: Icon(
-                    Icons.notifications_outlined,
-                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
-                    size: 20,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // 🔹 TODAY
-            _sectionTitle("TODAY"),
-            const SizedBox(height: 10),
-
-            _notifCard(
-              cardColor: cardColor,
-              iconWidget: _iconBox(
-                icon: Icons.people_outline,
-                iconColor: const Color(0xFF2563EB),
-                bgColor: isDark ? const Color(0xFF1D3461) : const Color(0xFFEFF6FF),
-              ),
-              titleWidget: _richTitle(
-                context: context,
-                textPrimary: textPrimary,
-                prefix: "Your ticket ",
-                ticketId: "#TK-8842",
-                suffix: " is now ",
-                highlight: "In Progress",
-                highlightColor: const Color(0xFFBC4800),
-              ),
-              time: "2 hours ago",
-              status: "IN PROGRESS",
-              statusColor: const Color(0xFFBC4800),
-              statusBg: const Color(0xFFFFF0E6),
-            ),
-
-            _notifCard(
-              cardColor: cardColor,
-              iconWidget: _iconBox(
-                icon: Icons.chat_bubble_outline,
-                iconColor: const Color(0xFF94A3B8),
-                bgColor: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
-              ),
-              titleWidget: _richTitle(
-                context: context,
-                textPrimary: textPrimary,
-                prefix: "Admin replied to your ticket ",
-                ticketId: "#TK-8791",
-                suffix: "",
-                highlight: "",
-                highlightColor: Colors.transparent,
-              ),
-              time: "5 hours ago",
-              status: "WAITING",
-              statusColor: const Color(0xFFEF4444),
-              statusBg: const Color(0xFFFEE2E2),
-            ),
-
-            const SizedBox(height: 20),
-
-            // 🔹 YESTERDAY
-            _sectionTitle("YESTERDAY"),
-            const SizedBox(height: 10),
-
-            _notifCard(
-              cardColor: cardColor,
-              iconWidget: _iconBox(
-                icon: Icons.check_circle_outline,
-                iconColor: const Color(0xFF16A34A),
-                bgColor: isDark
-                    ? const Color.fromRGBO(20, 83, 45, 0.4)
-                    : const Color(0xFFF0FDF4),
-              ),
-              titleWidget: _richTitle(
-                context: context,
-                textPrimary: textPrimary,
-                prefix: "Your ticket ",
-                ticketId: "#TK-8650",
-                suffix: " has been ",
-                highlight: "resolved",
-                highlightColor: const Color(0xFF16A34A),
-              ),
-              time: "Yesterday at 4:12 PM",
-              status: "RESOLVED",
-              statusColor: const Color(0xFF16A34A),
-              statusBg: const Color(0xFFF0FDF4),
-            ),
-
-            _notifCard(
-              cardColor: cardColor,
-              iconWidget: _iconBox(
-                icon: Icons.article_outlined,
-                iconColor: const Color(0xFF94A3B8),
-                bgColor: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
-              ),
-              titleWidget: _richTitle(
-                context: context,
-                textPrimary: textPrimary,
-                prefix: "New ticket ",
-                ticketId: "#TK-8791",
-                suffix: " created: \"Login issues...\"",
-                highlight: "",
-                highlightColor: Colors.transparent,
-              ),
-              time: "Yesterday at 11:30 AM",
-              status: "WAITING",
-              statusColor: const Color(0xFF475569),
-              statusBg: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
-            ),
-
-            const SizedBox(height: 24),
-
-            // 🔥 FEATURED ALERT
-            _sectionTitle("FEATURED ALERT"),
-            const SizedBox(height: 10),
-
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    // HEADER
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.bolt, color: Colors.white70, size: 14),
-                            const SizedBox(width: 4),
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1E293B),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.confirmation_num,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
                             const Text(
-                              "URGENT UPDATE",
+                              "Concierge",
                               style: TextStyle(
-                                color: Color.fromRGBO(255, 255, 255, 0.7), // ✅ fixed
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.8,
+                                color: Color(0xFF2563EB),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                                letterSpacing: -0.3,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
-                        const Text(
-                          "Server Maintenance\nScheduled",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            height: 1.3,
-                            letterSpacing: -0.3,
+                        Stack(
+                          children: [
+                            Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: cardColor,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: borderColor),
+                              ),
+                              child: Icon(
+                                Icons.notifications_outlined,
+                                color: isDark
+                                    ? const Color(0xFF94A3B8)
+                                    : const Color(0xFF475569),
+                                size: 20,
+                              ),
+                            ),
+                            if (_unreadCount > 0)
+                              Positioned(
+                                right: 6,
+                                top: 6,
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFEF4444),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    Text(
+                      "Notifications",
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: textPrimary,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      "Track latest updates from the helpdesk team.",
+                      style: TextStyle(
+                        color: Color(0xFF94A3B8),
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    _sectionTitle("SUPABASE UPDATES"),
+                    const SizedBox(height: 10),
+
+                    if (_notifications.isEmpty)
+                      _emptyState(
+                        cardColor: cardColor,
+                        textPrimary: textPrimary,
+                      ),
+
+                    ..._notifications.map((notif) {
+                      final status = (notif["status"] ?? "INFO").toString();
+                      final type = (notif["type"] ?? "info").toString();
+
+                      return _notifCard(
+                        cardColor: cardColor,
+                        iconWidget: _iconBox(
+                          icon: _notifIcon(type, status),
+                          iconColor: _statusColor(status),
+                          bgColor: _statusBg(status, isDark),
+                        ),
+                        title: notif["message"] ?? "-",
+                        time: notif["time"] ?? "Just now",
+                        status: status,
+                        statusColor: _statusColor(status),
+                        statusBg: _statusBg(status, isDark),
+                        textPrimary: textPrimary,
+                      );
+                    }),
+
+                    const SizedBox(height: 24),
+
+                    _sectionTitle("FEATURED ALERT"),
+                    const SizedBox(height: 10),
+
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(22),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: const [
+                                Row(
+                                  children: [
+                                    Icon(Icons.bolt, color: Colors.white70, size: 14),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      "URGENT UPDATE",
+                                      style: TextStyle(
+                                        color: Color.fromRGBO(255, 255, 255, 0.7),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.8,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 10),
+                                Text(
+                                  "Server Maintenance\nScheduled",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    height: 1.3,
+                                    letterSpacing: -0.3,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  "Tomorrow, 02:00 AM UTC",
+                                  style: TextStyle(
+                                    color: Color.fromRGBO(255, 255, 255, 0.7),
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: const Color.fromRGBO(255, 255, 255, 0.12),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(
+                              Icons.dns_outlined,
+                              color: Colors.white70,
+                              size: 24,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _statCard(
+                            cardColor: cardColor,
+                            textPrimary: textPrimary,
+                            value: _activeNotifCount.toString(),
+                            label: "ACTIVE UPDATES",
+                            icon: Icons.article_outlined,
+                            iconColor: const Color(0xFF2563EB),
+                            iconBg: isDark ? const Color(0xFF1D3461) : const Color(0xFFEFF6FF),
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          "Tomorrow, 02:00 AM UTC",
-                          style: TextStyle(
-                            color: Color.fromRGBO(255, 255, 255, 0.7), // ✅ fixed
-                            fontSize: 13,
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: _statCard(
+                            cardColor: cardColor,
+                            textPrimary: textPrimary,
+                            value: _unreadCount.toString(),
+                            label: "UNREAD",
+                            icon: Icons.notifications_active_outlined,
+                            iconColor: const Color(0xFFBC4800),
+                            iconBg: isDark
+                                ? const Color.fromRGBO(67, 20, 7, 0.5)
+                                : const Color(0xFFFFF0E6),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: const Color.fromRGBO(255, 255, 255, 0.12), // ✅ fixed
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(
-                      Icons.dns_outlined,
-                      color: Colors.white70,
-                      size: 24,
-                    ),
-                  ),
-                ],
+
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // 📊 STATS ROW
-            Row(
-              children: [
-                Expanded(
-                  child: _statCard(
-                    cardColor: cardColor,
-                    textPrimary: textPrimary,
-                    value: "12",
-                    label: "ACTIVE TICKETS",
-                    icon: Icons.article_outlined,
-                    iconColor: const Color(0xFF2563EB),
-                    iconBg: isDark ? const Color(0xFF1D3461) : const Color(0xFFEFF6FF),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: _statCard(
-                    cardColor: cardColor,
-                    textPrimary: textPrimary,
-                    value: "1.2h",
-                    label: "AVG RESPONSE",
-                    icon: Icons.timer_outlined,
-                    iconColor: const Color(0xFFBC4800),
-                    iconBg: isDark
-                        ? const Color.fromRGBO(67, 20, 7, 0.5)
-                        : const Color(0xFFFFF0E6),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-          ],
-        ),
       ),
 
-      // 🔻 BOTTOM NAV
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 2,
         type: BottomNavigationBarType.fixed,
@@ -313,13 +405,14 @@ class NotificationPage extends StatelessWidget {
         elevation: 8,
         onTap: (index) {
           if (index == 2) return;
+
           if (index == 0) {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
                 builder: (_) => DashboardPage(
                   role: "user",
-                  toggleTheme: toggleTheme,
+                  toggleTheme: widget.toggleTheme,
                 ),
               ),
             );
@@ -327,7 +420,9 @@ class NotificationPage extends StatelessWidget {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (_) => TicketListPage(toggleTheme: toggleTheme),
+                builder: (_) => TicketListPage(
+                  toggleTheme: widget.toggleTheme,
+                ),
               ),
             );
           } else if (index == 3) {
@@ -335,7 +430,7 @@ class NotificationPage extends StatelessWidget {
               context,
               MaterialPageRoute(
                 builder: (_) => ProfilePage(
-                  toggleTheme: toggleTheme ?? (value) {},
+                  toggleTheme: widget.toggleTheme ?? (value) {},
                 ),
               ),
             );
@@ -375,14 +470,56 @@ class NotificationPage extends StatelessWidget {
     );
   }
 
+  Widget _emptyState({
+    required Color cardColor,
+    required Color textPrimary,
+  }) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.notifications_none,
+            color: Color(0xFF94A3B8),
+            size: 36,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            "No notifications found",
+            style: TextStyle(
+              color: textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            "Updates from helpdesk will appear here.",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(0xFF94A3B8),
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _notifCard({
     required Widget iconWidget,
-    required Widget titleWidget,
+    required String title,
     required String time,
     required String status,
     required Color statusColor,
     required Color statusBg,
     required Color cardColor,
+    required Color textPrimary,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -407,7 +544,15 @@ class NotificationPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                titleWidget,
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: textPrimary,
+                    fontWeight: FontWeight.w500,
+                    height: 1.4,
+                  ),
+                ),
                 const SizedBox(height: 5),
                 Text(
                   time,
@@ -451,46 +596,6 @@ class NotificationPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Icon(icon, color: iconColor, size: 20),
-    );
-  }
-
-  Widget _richTitle({
-    required BuildContext context,
-    required Color textPrimary,
-    required String prefix,
-    required String ticketId,
-    required String suffix,
-    required String highlight,
-    required Color highlightColor,
-  }) {
-    return RichText(
-      text: TextSpan(
-        style: TextStyle(
-          fontSize: 13,
-          color: textPrimary,
-          fontWeight: FontWeight.w500,
-          height: 1.4,
-        ),
-        children: [
-          TextSpan(text: prefix),
-          TextSpan(
-            text: ticketId,
-            style: const TextStyle(
-              color: Color(0xFF2563EB),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          TextSpan(text: suffix),
-          if (highlight.isNotEmpty)
-            TextSpan(
-              text: highlight,
-              style: TextStyle(
-                color: highlightColor,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-        ],
-      ),
     );
   }
 

@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'features/auth/splash_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: 'https://goxibsdakknkymwbjcui.supabase.co',
+    anonKey: 'sb_publishable_VNudxlzSXHb5ezM1Ehlktw_XtDN3kh8',
+  );
+
   runApp(MyApp());
 }
 
@@ -27,7 +36,7 @@ class _MyAppState extends State<MyApp> {
       darkTheme: ThemeData.dark(),
       themeMode: _themeMode,
       home: SplashScreen(
-        toggleTheme: toggleTheme, // ✅ PINDAH KE SINI
+        toggleTheme: toggleTheme,
       ),
     );
   }
