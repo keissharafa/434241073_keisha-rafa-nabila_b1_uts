@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
-import '../admin/admin_dashboard_page.dart';
-import '../admin/admin_ticket_page.dart';
-import 'admin_profile_page.dart';
+import 'helpdesk_dashboard_page.dart';
+import 'helpdesk_ticket_page.dart';
+import 'helpdesk_profile_page.dart';
 import '../../services/ticket_service.dart';
 
-class AdminNotificationPage extends StatefulWidget {
+class HelpdeskNotificationPage extends StatefulWidget {
   final Function(bool) toggleTheme;
 
-  const AdminNotificationPage({super.key, required this.toggleTheme});
+  const HelpdeskNotificationPage({super.key, required this.toggleTheme});
 
   @override
-  State<AdminNotificationPage> createState() => _AdminNotificationPageState();
+  State<HelpdeskNotificationPage> createState() =>
+      _HelpdeskNotificationPageState();
 }
 
-class _AdminNotificationPageState extends State<AdminNotificationPage> {
+class _HelpdeskNotificationPageState extends State<HelpdeskNotificationPage> {
   int _selectedIndex = 2;
 
   final TicketService _ticketService = TicketService();
@@ -88,23 +89,22 @@ class _AdminNotificationPageState extends State<AdminNotificationPage> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => AdminDashboardPage(toggleTheme: widget.toggleTheme),
+          builder: (_) =>
+              HelpdeskDashboardPage(toggleTheme: widget.toggleTheme),
         ),
       );
     } else if (index == 1) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => AdminTicketPage(toggleTheme: widget.toggleTheme),
+          builder: (_) => HelpdeskTicketPage(toggleTheme: widget.toggleTheme),
         ),
       );
     } else if (index == 3) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => AdminProfilePage(
-            toggleTheme: widget.toggleTheme,
-          ),
+          builder: (_) => HelpdeskProfilePage(toggleTheme: widget.toggleTheme),
         ),
       );
     }
@@ -174,8 +174,12 @@ class _AdminNotificationPageState extends State<AdminNotificationPage> {
 
     final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
     final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final textPrimary = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final textPrimary = isDark
+        ? const Color(0xFFF1F5F9)
+        : const Color(0xFF0F172A);
+    final borderColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
     final navBg = isDark ? const Color(0xFF1E293B) : Colors.white;
     final labelColor = const Color(0xFF94A3B8);
 
@@ -183,9 +187,7 @@ class _AdminNotificationPageState extends State<AdminNotificationPage> {
       backgroundColor: bgColor,
       body: SafeArea(
         child: isLoading
-            ? const Center(
-                child: CircularProgressIndicator(),
-              )
+            ? const Center(child: CircularProgressIndicator())
             : RefreshIndicator(
                 onRefresh: _loadNotifications,
                 child: ListView(
@@ -449,10 +451,7 @@ class _AdminNotificationPageState extends State<AdminNotificationPage> {
           fontWeight: FontWeight.w600,
           letterSpacing: 0.5,
         ),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 10,
-          letterSpacing: 0.5,
-        ),
+        unselectedLabelStyle: const TextStyle(fontSize: 10, letterSpacing: 0.5),
         backgroundColor: navBg,
         elevation: 8,
         items: const [
@@ -489,10 +488,7 @@ class _AdminNotificationPageState extends State<AdminNotificationPage> {
     );
   }
 
-  Widget _emptyState({
-    required Color cardColor,
-    required Color textPrimary,
-  }) {
+  Widget _emptyState({required Color cardColor, required Color textPrimary}) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 16),
@@ -511,19 +507,13 @@ class _AdminNotificationPageState extends State<AdminNotificationPage> {
           const SizedBox(height: 10),
           Text(
             "No notifications found",
-            style: TextStyle(
-              color: textPrimary,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           const Text(
             "Create or update a ticket to generate notifications.",
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF94A3B8),
-              fontSize: 13,
-            ),
+            style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
           ),
         ],
       ),

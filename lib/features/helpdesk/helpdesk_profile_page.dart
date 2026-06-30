@@ -1,79 +1,81 @@
 import 'package:flutter/material.dart';
-import 'admin_dashboard_page.dart';
-import 'admin_ticket_page.dart';
-import 'admin_notification_page.dart';
+import 'helpdesk_dashboard_page.dart';
+import 'helpdesk_ticket_page.dart';
+import 'helpdesk_notification_page.dart';
 
-class _AdminDashboardStub extends StatelessWidget {
+class _HelpdeskDashboardStub extends StatelessWidget {
   final Function(bool) toggleTheme;
-  const _AdminDashboardStub({required this.toggleTheme});
+  const _HelpdeskDashboardStub({required this.toggleTheme});
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Admin Dashboard')),
-        body: const Center(child: Text('Admin Dashboard')),
-      );
+    appBar: AppBar(title: const Text('Admin Dashboard')),
+    body: const Center(child: Text('Admin Dashboard')),
+  );
 }
 
-class _AdminTicketStub extends StatelessWidget {
+class _HelpdeskTicketStub extends StatelessWidget {
   final Function(bool) toggleTheme;
-  const _AdminTicketStub({required this.toggleTheme});
+  const _HelpdeskTicketStub({required this.toggleTheme});
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Tickets')),
-        body: const Center(child: Text('Tickets Page')),
-      );
+    appBar: AppBar(title: const Text('Tickets')),
+    body: const Center(child: Text('Tickets Page')),
+  );
 }
 
-class _AdminNotificationStub extends StatelessWidget {
+class _HelpdeskNotificationStub extends StatelessWidget {
   final Function(bool) toggleTheme;
-  const _AdminNotificationStub({required this.toggleTheme});
+  const _HelpdeskNotificationStub({required this.toggleTheme});
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Alerts')),
-        body: const Center(child: Text('Alerts Page')),
-      );
+    appBar: AppBar(title: const Text('Alerts')),
+    body: const Center(child: Text('Alerts Page')),
+  );
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-class AdminProfilePage extends StatefulWidget {
+class HelpdeskProfilePage extends StatefulWidget {
   final Function(bool) toggleTheme;
 
-  const AdminProfilePage({Key? key, required this.toggleTheme})
-      : super(key: key);
+  const HelpdeskProfilePage({Key? key, required this.toggleTheme})
+    : super(key: key);
 
   @override
-  State<AdminProfilePage> createState() => _AdminProfilePageState();
+  State<HelpdeskProfilePage> createState() => _HelpdeskProfilePageState();
 }
 
-class _AdminProfilePageState extends State<AdminProfilePage> {
+class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
   // ── Bottom-nav ──────────────────────────────────────────────────────────────
   void _onNavTap(int index) {
-  if (index == 3) return;
-  switch (index) {
-    case 0:
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => AdminDashboardPage(toggleTheme: widget.toggleTheme),  
-        ),
-      );
-      break;
-    case 1:
-      Navigator.pushReplacement(  
-        context,
-        MaterialPageRoute(
-          builder: (_) => AdminTicketPage(toggleTheme: widget.toggleTheme),
-        ),
-      );
-      break;
-    case 2:
-      Navigator.pushReplacement(  
-        context,
-        MaterialPageRoute(
-          builder: (_) => AdminNotificationPage(toggleTheme: widget.toggleTheme),
-        ),
-      );
-      break;
+    if (index == 3) return;
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                HelpdeskDashboardPage(toggleTheme: widget.toggleTheme),
+          ),
+        );
+        break;
+      case 1:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => HelpdeskTicketPage(toggleTheme: widget.toggleTheme),
+          ),
+        );
+        break;
+      case 2:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                HelpdeskNotificationPage(toggleTheme: widget.toggleTheme),
+          ),
+        );
+        break;
     }
   }
 
@@ -89,16 +91,17 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
     bool isLoading = false;
 
     final sheetBg = isDarkSheet ? const Color(0xFF1E293B) : Colors.white;
-    final labelColor =
-        isDarkSheet ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
-    final fieldBg =
-        isDarkSheet ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
-    final hintColor =
-        isDarkSheet ? const Color(0xFF64748B) : Colors.grey[400]!;
-    final iconColor =
-        isDarkSheet ? const Color(0xFF64748B) : Colors.grey[400]!;
-    final subtitleColor =
-        isDarkSheet ? const Color(0xFF94A3B8) : Colors.grey[500]!;
+    final labelColor = isDarkSheet
+        ? const Color(0xFFF1F5F9)
+        : const Color(0xFF0F172A);
+    final fieldBg = isDarkSheet
+        ? const Color(0xFF0F172A)
+        : const Color(0xFFF1F5F9);
+    final hintColor = isDarkSheet ? const Color(0xFF64748B) : Colors.grey[400]!;
+    final iconColor = isDarkSheet ? const Color(0xFF64748B) : Colors.grey[400]!;
+    final subtitleColor = isDarkSheet
+        ? const Color(0xFF94A3B8)
+        : Colors.grey[500]!;
 
     showModalBottomSheet(
       context: context,
@@ -111,8 +114,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
           ),
           decoration: BoxDecoration(
             color: sheetBg,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(28)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
@@ -206,8 +208,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                         ? null
                         : () async {
                             setSheet(() => isLoading = true);
-                            await Future.delayed(
-                                const Duration(seconds: 1));
+                            await Future.delayed(const Duration(seconds: 1));
                             Navigator.pop(ctx);
                             _showSuccessDialog(isDarkSheet);
                           },
@@ -239,20 +240,20 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
 
   // ── Success dialog ──────────────────────────────────────────────────────────
   void _showSuccessDialog(bool isDarkDialog) {
-    final dialogBg =
-        isDarkDialog ? const Color(0xFF1E293B) : Colors.white;
-    final titleColor =
-        isDarkDialog ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
-    final bodyColor =
-        isDarkDialog ? const Color(0xFF94A3B8) : Colors.grey[500]!;
+    final dialogBg = isDarkDialog ? const Color(0xFF1E293B) : Colors.white;
+    final titleColor = isDarkDialog
+        ? const Color(0xFFF1F5F9)
+        : const Color(0xFF0F172A);
+    final bodyColor = isDarkDialog
+        ? const Color(0xFF94A3B8)
+        : Colors.grey[500]!;
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => Dialog(
         backgroundColor: dialogBg,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Padding(
           padding: const EdgeInsets.all(28),
           child: Column(
@@ -287,11 +288,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                 'Your password has been updated successfully. '
                 'Please use your new password the next time you log in.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: bodyColor,
-                  height: 1.5,
-                ),
+                style: TextStyle(fontSize: 13, color: bodyColor, height: 1.5),
               ),
               const SizedBox(height: 24),
               SizedBox(
@@ -309,8 +306,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                   onPressed: () => Navigator.pop(context),
                   child: const Text(
                     'Got it',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 15),
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                   ),
                 ),
               ),
@@ -323,10 +319,9 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
   Widget _sheetLabel(String text, Color color) => Text(
-        text,
-        style: TextStyle(
-            fontSize: 14, fontWeight: FontWeight.w500, color: color),
-      );
+    text,
+    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: color),
+  );
 
   Widget _sheetTextField({
     required TextEditingController controller,
@@ -337,45 +332,39 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
     required Color hintColor,
     required Color iconColor,
     required Color textColor,
-  }) =>
-      TextField(
-        controller: controller,
-        obscureText: obscure,
-        style: TextStyle(fontSize: 14, color: textColor),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(color: hintColor, fontSize: 14),
-          prefixIcon:
-              Icon(Icons.lock_outline, color: iconColor, size: 20),
-          suffixIcon: GestureDetector(
-            onTap: onToggle,
-            child: Icon(
-              obscure
-                  ? Icons.visibility_outlined
-                  : Icons.visibility_off_outlined,
-              color: iconColor,
-              size: 20,
-            ),
-          ),
-          filled: true,
-          fillColor: fieldBg,
-          contentPadding: const EdgeInsets.symmetric(
-              vertical: 16, horizontal: 16),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(
-                color: Color(0xFF2563EB), width: 1.5),
-          ),
+  }) => TextField(
+    controller: controller,
+    obscureText: obscure,
+    style: TextStyle(fontSize: 14, color: textColor),
+    decoration: InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(color: hintColor, fontSize: 14),
+      prefixIcon: Icon(Icons.lock_outline, color: iconColor, size: 20),
+      suffixIcon: GestureDetector(
+        onTap: onToggle,
+        child: Icon(
+          obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+          color: iconColor,
+          size: 20,
         ),
-      );
+      ),
+      filled: true,
+      fillColor: fieldBg,
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
+      ),
+    ),
+  );
 
   // ── Menu item ────────────────────────────────────────────────────────────────
   Widget _buildMenuItem({
@@ -388,51 +377,48 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
     required Color subtitleColor,
     required Color chevronColor,
     required VoidCallback onTap,
-  }) =>
-      InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: iconBg,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: iconColor, size: 20),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: titleColor,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style:
-                          TextStyle(fontSize: 12, color: subtitleColor),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right, color: chevronColor, size: 20),
-            ],
+  }) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(20),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: iconBg,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: iconColor, size: 20),
           ),
-        ),
-      );
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: titleColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(fontSize: 12, color: subtitleColor),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right, color: chevronColor, size: 20),
+        ],
+      ),
+    ),
+  );
 
   // ── Build ────────────────────────────────────────────────────────────────────
   @override
@@ -441,14 +427,16 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
 
     final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
     final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final textPrimary =
-        isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
-    final textSecondary =
-        isDark ? const Color(0xFF94A3B8) : Colors.grey[500]!;
-    final borderColor =
-        isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-    final dividerColor =
-        isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9);
+    final textPrimary = isDark
+        ? const Color(0xFFF1F5F9)
+        : const Color(0xFF0F172A);
+    final textSecondary = isDark ? const Color(0xFF94A3B8) : Colors.grey[500]!;
+    final borderColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
+    final dividerColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFF1F5F9);
     final navBg = isDark ? const Color(0xFF1E293B) : Colors.white;
     const shadowColor = Color.fromRGBO(0, 0, 0, 0.04);
 
@@ -456,8 +444,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
       backgroundColor: bgColor,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -517,15 +504,18 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
-                    vertical: 24, horizontal: 20),
+                  vertical: 24,
+                  horizontal: 20,
+                ),
                 decoration: BoxDecoration(
                   color: cardColor,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: const [
                     BoxShadow(
-                        color: shadowColor,
-                        blurRadius: 8,
-                        offset: Offset(0, 2)),
+                      color: shadowColor,
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
                   ],
                 ),
                 child: Row(
@@ -542,8 +532,11 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                           ),
                           clipBehavior: Clip.antiAlias,
                           // Use an actual avatar image or keep the icon fallback
-                          child: const Icon(Icons.person,
-                              color: Colors.white, size: 40),
+                          child: const Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 40,
+                          ),
                         ),
                         Positioned(
                           bottom: 3,
@@ -554,8 +547,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                             decoration: BoxDecoration(
                               color: const Color(0xFF22C55E),
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                  color: cardColor, width: 2.5),
+                              border: Border.all(color: cardColor, width: 2.5),
                             ),
                           ),
                         ),
@@ -579,15 +571,15 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                               ),
                               const SizedBox(width: 8),
                               Container(
-                                padding:
-                                    const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 3),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
                                 decoration: BoxDecoration(
                                   color: isDark
                                       ? const Color(0xFF1D3461)
                                       : const Color(0xFFEFF6FF),
-                                  borderRadius:
-                                      BorderRadius.circular(6),
+                                  borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: const Text(
                                   'ADMIN',
@@ -605,7 +597,9 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                           Text(
                             'admin@company.com',
                             style: TextStyle(
-                                color: textSecondary, fontSize: 13),
+                              color: textSecondary,
+                              fontSize: 13,
+                            ),
                           ),
                         ],
                       ),
@@ -637,9 +631,10 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: const [
                     BoxShadow(
-                        color: shadowColor,
-                        blurRadius: 8,
-                        offset: Offset(0, 2)),
+                      color: shadowColor,
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
                   ],
                 ),
                 child: Column(
@@ -660,11 +655,12 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                       onTap: () {},
                     ),
                     Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: dividerColor,
-                        indent: 16,
-                        endIndent: 16),
+                      height: 1,
+                      thickness: 1,
+                      color: dividerColor,
+                      indent: 16,
+                      endIndent: 16,
+                    ),
                     _buildMenuItem(
                       icon: Icons.bar_chart_rounded,
                       iconBg: isDark
@@ -681,11 +677,12 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                       onTap: () {},
                     ),
                     Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: dividerColor,
-                        indent: 16,
-                        endIndent: 16),
+                      height: 1,
+                      thickness: 1,
+                      color: dividerColor,
+                      indent: 16,
+                      endIndent: 16,
+                    ),
                     _buildMenuItem(
                       icon: Icons.confirmation_num_outlined,
                       iconBg: isDark
@@ -728,9 +725,10 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: const [
                     BoxShadow(
-                        color: shadowColor,
-                        blurRadius: 8,
-                        offset: Offset(0, 2)),
+                      color: shadowColor,
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
                   ],
                 ),
                 child: Column(
@@ -738,7 +736,9 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                     // Dark Mode toggle
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 4),
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
                       child: SwitchListTile(
                         contentPadding: EdgeInsets.zero,
                         secondary: Container(
@@ -766,8 +766,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                         ),
                         subtitle: Text(
                           'Enable dark theme',
-                          style: TextStyle(
-                              color: textSecondary, fontSize: 12),
+                          style: TextStyle(color: textSecondary, fontSize: 12),
                         ),
                         value: isDark,
                         activeColor: const Color(0xFF2563EB),
@@ -775,11 +774,12 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                       ),
                     ),
                     Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: dividerColor,
-                        indent: 16,
-                        endIndent: 16),
+                      height: 1,
+                      thickness: 1,
+                      color: dividerColor,
+                      indent: 16,
+                      endIndent: 16,
+                    ),
                     // Reset Password
                     _buildMenuItem(
                       icon: Icons.lock_reset_outlined,
@@ -823,9 +823,10 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: const [
                     BoxShadow(
-                        color: shadowColor,
-                        blurRadius: 8,
-                        offset: Offset(0, 2)),
+                      color: shadowColor,
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
                   ],
                 ),
                 child: Column(
@@ -846,11 +847,12 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                       onTap: () {},
                     ),
                     Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: dividerColor,
-                        indent: 16,
-                        endIndent: 16),
+                      height: 1,
+                      thickness: 1,
+                      color: dividerColor,
+                      indent: 16,
+                      endIndent: 16,
+                    ),
                     _buildMenuItem(
                       icon: Icons.logout_rounded,
                       iconBg: isDark
@@ -894,10 +896,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
           fontWeight: FontWeight.w600,
           letterSpacing: 0.5,
         ),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 10,
-          letterSpacing: 0.5,
-        ),
+        unselectedLabelStyle: const TextStyle(fontSize: 10, letterSpacing: 0.5),
         backgroundColor: navBg,
         elevation: 8,
         type: BottomNavigationBarType.fixed,

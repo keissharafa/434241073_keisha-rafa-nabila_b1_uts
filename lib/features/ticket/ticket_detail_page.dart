@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../services/ticket_service.dart';
 
-class TicketDetailPage extends StatelessWidget {
+class TicketDetailPage extends StatefulWidget {
   final Map ticket;
   final Function(bool)? toggleTheme;
 
@@ -11,10 +12,130 @@ class TicketDetailPage extends StatelessWidget {
   });
 
   @override
+  State<TicketDetailPage> createState() => _TicketDetailPageState();
+}
+
+class _TicketDetailPageState extends State<TicketDetailPage> {
+  final TicketService _ticketService = TicketService();
+  final TextEditingController _commentController = TextEditingController();
+
+  List<Map<String, dynamic>> _comments = [];
+  bool isLoadingComments = true;
+  bool isSending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadComments();
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadComments() async {
+    final rawId = widget.ticket["ticketId"];
+    if (rawId == null) {
+      // tiket belum punya id numerik asli (mis. masih dummy lama)
+      setState(() => isLoadingComments = false);
+      return;
+    }
+
+    try {
+      final data = await _ticketService.getComments(ticketId: rawId as int);
+      if (!mounted) return;
+      setState(() {
+        _comments = data;
+        isLoadingComments = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => isLoadingComments = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to load comments: $e")),
+      );
+    }
+  }
+
+  Future<void> _sendComment() async {
+    final text = _commentController.text.trim();
+    final rawId = widget.ticket["ticketId"];
+
+    if (text.isEmpty || rawId == null || isSending) return;
+
+    setState(() => isSending = true);
+
+    try {
+      await _ticketService.addComment(
+        ticketId: rawId as int,
+        senderRole: "user",
+        senderName: "Alex Johnson", // TODO: ganti pas auth asli sudah ada
+        message: text,
+      );
+      _commentController.clear();
+      await _loadComments();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to send comment: $e")),
+      );
+    } finally {
+      if (mounted) setState(() => isSending = false);
+    }
+  }
+
+  // 🕒 Hitung "X ago" sederhana dari created_at
+  String _timeAgo(dynamic rawDate) {
+    if (rawDate == null) return "recently";
+    try {
+      final date = DateTime.parse(rawDate.toString());
+      final diff = DateTime.now().difference(date);
+      if (diff.inMinutes < 60) return "${diff.inMinutes}m ago";
+      if (diff.inHours < 24) return "${diff.inHours}h ago";
+      return "${diff.inDays}d ago";
+    } catch (_) {
+      return "recently";
+    }
+  }
+
+  // 🗂️ Bangun timeline dari data tiket asli, bukan hardcoded
+  List<Map<String, String>> _buildTimelineSteps() {
+    final status = (widget.ticket["status"] ?? "OPEN").toString().toUpperCase();
+    final assignedTo = widget.ticket["assignedTo"];
+    final isResolved = status == "RESOLVED" || status == "CLOSED";
+    final isInProgress = status == "IN PROGRESS";
+
+    final doneFlags = <bool>[
+      true, // Ticket Created selalu selesai
+      assignedTo != null && assignedTo.toString().isNotEmpty,
+      isInProgress || isResolved,
+      isResolved,
+    ];
+
+    final labels = [
+      "Ticket Created",
+      "Assigned to Helpdesk",
+      "In Progress",
+      "Resolved",
+    ];
+
+    int activeIndex = doneFlags.indexWhere((d) => !d);
+    if (activeIndex == -1) activeIndex = labels.length;
+
+    return List.generate(labels.length, (i) {
+      final state = i < activeIndex
+          ? "completed"
+          : (i == activeIndex ? "active" : "upcoming");
+      return {"label": labels[i], "state": state};
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // 🎨 Dark mode tokens
     final bgColor       = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
     final cardColor     = isDark ? const Color(0xFF1E293B) : Colors.white;
     final textPrimary   = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
@@ -29,32 +150,12 @@ class TicketDetailPage extends StatelessWidget {
     final timelineBg    = cardColor;
     final dividerColor  = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
 
-    final comments = [
-      {
-        "sender": "admin",
-        "name": "Sarah Jenkins",
-        "initials": "SJ",
-        "avatarColor": const Color(0xFFF59E0B),
-        "message": "Hi Alex, I\'m checking your VPN issue right now. Are you seeing any specific error message when trying to connect?",
-        "time": "10:45 AM"
-      },
-      {
-        "sender": "user",
-        "name": "Alex Johnson",
-        "initials": "AJ",
-        "avatarColor": const Color(0xFF6366F1),
-        "message": "Yes, it shows connection timeout. I\'ve tried reconnecting multiple times but still can\'t access the VPN.",
-        "time": "10:52 AM"
-      },
-      {
-        "sender": "admin",
-        "name": "Sarah Jenkins",
-        "initials": "SJ",
-        "avatarColor": const Color(0xFFF59E0B),
-        "message": "Got it. This might be an issue with the VPN server. I\'ll escalate this to our network team and keep you updated.",
-        "time": "11:05 AM"
-      },
-    ];
+    final status = (widget.ticket["status"] ?? "OPEN").toString();
+    final priority = (widget.ticket["priority"] ??
+            widget.ticket["requestedPriority"] ??
+            "MEDIUM")
+        .toString()
+        .toUpperCase();
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -71,8 +172,8 @@ class TicketDetailPage extends StatelessWidget {
                     icon: Icon(Icons.arrow_back, color: backIconColor),
                     onPressed: () => Navigator.pop(context),
                   ),
-                  Expanded(
-                    child: const Text(
+                  const Expanded(
+                    child: Text(
                       "Ticket Details",
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -106,7 +207,7 @@ class TicketDetailPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          ticket["id"] ?? "#TK-0000",
+                          widget.ticket["id"] ?? "#TK-0000",
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -116,7 +217,7 @@ class TicketDetailPage extends StatelessWidget {
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        "Opened 2h ago",
+                        "Opened ${_timeAgo(widget.ticket["createdAt"])}",
                         style: TextStyle(fontSize: 12, color: textMuted),
                       ),
                     ],
@@ -126,7 +227,7 @@ class TicketDetailPage extends StatelessWidget {
 
                   // TITLE
                   Text(
-                    ticket["title"] ?? "VPN Access Issue",
+                    widget.ticket["title"] ?? "Untitled Ticket",
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -164,7 +265,7 @@ class TicketDetailPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          ticket["description"] ?? "No description provided.",
+                          widget.ticket["description"] ?? "No description provided.",
                           style: TextStyle(
                             height: 1.6,
                             fontSize: 13,
@@ -177,8 +278,9 @@ class TicketDetailPage extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
-                  // 🗂️ TRACKING TIMELINE
+                  // 🗂️ TRACKING TIMELINE (data asli)
                   _buildTrackingTimeline(
+                    steps: _buildTimelineSteps(),
                     cardColor: timelineBg,
                     textPrimary: textPrimary,
                     dividerColor: dividerColor,
@@ -186,17 +288,17 @@ class TicketDetailPage extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
-                  // STATUS & PRIORITY
+                  // STATUS & PRIORITY (data asli)
                   Row(
                     children: [
                       _badge(
-                        "STATUS", "ACTIVE",
+                        "STATUS", status,
                         const Color(0xFF2563EB),
                         isDark ? const Color(0xFF1D3461) : const Color(0xFFEFF6FF),
                       ),
                       const SizedBox(width: 10),
                       _badge(
-                        "PRIORITY", "URGENT",
+                        "PRIORITY", priority,
                         const Color(0xFFEF4444),
                         isDark ? const Color(0xFF450A0A) : const Color(0xFFFEF2F2),
                       ),
@@ -217,82 +319,95 @@ class TicketDetailPage extends StatelessWidget {
 
                   const SizedBox(height: 12),
 
-                  // 💬 CHAT
-                  ...comments.map((c) {
-                    final isUser = c["sender"] == "user";
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: isUser
-                            ? MainAxisAlignment.end
-                            : MainAxisAlignment.start,
-                        children: [
-                          if (!isUser) ...[
-                            _avatar(
-                              c["initials"] as String,
-                              c["avatarColor"] as Color,
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                          Flexible(
-                            child: Column(
-                              crossAxisAlignment: isUser
-                                  ? CrossAxisAlignment.end
-                                  : CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "${c["name"]} • ${c["time"]}",
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: textMuted,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 14, vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: isUser
-                                        ? const Color(0xFF2563EB)
-                                        : bubbleAdminBg,
-                                    borderRadius: BorderRadius.only(
-                                      topLeft: Radius.circular(isUser ? 16 : 4),
-                                      topRight: Radius.circular(isUser ? 4 : 16),
-                                      bottomLeft: const Radius.circular(16),
-                                      bottomRight: const Radius.circular(16),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    c["message"] as String,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      height: 1.5,
-                                      color: isUser ? Colors.white : bubbleAdminText,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (isUser) ...[
-                            const SizedBox(width: 8),
-                            _avatar(
-                              c["initials"] as String,
-                              c["avatarColor"] as Color,
-                            ),
-                          ],
-                        ],
+                  // 💬 CHAT (data asli dari ticket_comments)
+                  if (isLoadingComments)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (_comments.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Text(
+                        "Belum ada komentar. Mulai percakapan di bawah.",
+                        style: TextStyle(color: textMuted, fontSize: 13),
                       ),
-                    );
-                  }),
+                    )
+                  else
+                    ..._comments.map((c) {
+                      final senderRole = (c["sender_role"] ?? "user").toString();
+                      final isUser = senderRole == "user";
+                      final senderName = (c["sender_name"] ?? "Unknown").toString();
+                      final initials = senderName.trim().isNotEmpty
+                          ? senderName.trim().split(" ").map((w) => w[0]).take(2).join().toUpperCase()
+                          : "U";
+                      final avatarColor = isUser
+                          ? const Color(0xFF6366F1)
+                          : const Color(0xFFF59E0B);
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment:
+                              isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+                          children: [
+                            if (!isUser) ...[
+                              _avatar(initials, avatarColor),
+                              const SizedBox(width: 8),
+                            ],
+                            Flexible(
+                              child: Column(
+                                crossAxisAlignment: isUser
+                                    ? CrossAxisAlignment.end
+                                    : CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "$senderName • ${_timeAgo(c["created_at"])}",
+                                    style: TextStyle(fontSize: 11, color: textMuted),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 14, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: isUser
+                                          ? const Color(0xFF2563EB)
+                                          : bubbleAdminBg,
+                                      borderRadius: BorderRadius.only(
+                                        topLeft: Radius.circular(isUser ? 16 : 4),
+                                        topRight: Radius.circular(isUser ? 4 : 16),
+                                        bottomLeft: const Radius.circular(16),
+                                        bottomRight: const Radius.circular(16),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      (c["message"] ?? "").toString(),
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        height: 1.5,
+                                        color: isUser ? Colors.white : bubbleAdminText,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isUser) ...[
+                              const SizedBox(width: 8),
+                              _avatar(initials, avatarColor),
+                            ],
+                          ],
+                        ),
+                      );
+                    }),
 
                   const SizedBox(height: 8),
                 ],
               ),
             ),
 
-            // ✍️ INPUT BAR
+            // ✍️ INPUT BAR (kirim komentar asli)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
@@ -311,13 +426,11 @@ class TicketDetailPage extends StatelessWidget {
                 children: [
                   Expanded(
                     child: TextField(
+                      controller: _commentController,
                       style: TextStyle(fontSize: 14, color: textPrimary),
                       decoration: InputDecoration(
                         hintText: "Add a comment...",
-                        hintStyle: TextStyle(
-                          color: textMuted,
-                          fontSize: 14,
-                        ),
+                        hintStyle: TextStyle(color: textMuted, fontSize: 14),
                         filled: true,
                         fillColor: inputBg,
                         contentPadding: const EdgeInsets.symmetric(
@@ -342,11 +455,19 @@ class TicketDetailPage extends StatelessWidget {
                       color: Color(0xFF2563EB),
                       shape: BoxShape.circle,
                     ),
-                    child: IconButton(
-                      icon: const Icon(Icons.send_rounded,
-                          color: Colors.white, size: 20),
-                      onPressed: () {},
-                    ),
+                    child: isSending
+                        ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : IconButton(
+                            icon: const Icon(Icons.send_rounded,
+                                color: Colors.white, size: 20),
+                            onPressed: _sendComment,
+                          ),
                   ),
                 ],
               ),
@@ -357,20 +478,13 @@ class TicketDetailPage extends StatelessWidget {
     );
   }
 
-  // 🗂️ TRACKING TIMELINE
+  // 🗂️ TRACKING TIMELINE (sekarang nerima steps dari luar, bukan hardcoded)
   Widget _buildTrackingTimeline({
+    required List<Map<String, String>> steps,
     required Color cardColor,
     required Color textPrimary,
     required Color dividerColor,
   }) {
-    final steps = [
-      {"label": "Ticket Created",    "state": "completed"},
-      {"label": "Assigned to Admin", "state": "completed"},
-      {"label": "Waiting",           "state": "completed"},
-      {"label": "In Progress",       "state": "active"},
-      {"label": "Resolved",          "state": "upcoming"},
-    ];
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -385,22 +499,20 @@ class TicketDetailPage extends StatelessWidget {
               const Icon(Icons.linear_scale_rounded,
                   size: 14, color: Color(0xFF2563EB)),
               const SizedBox(width: 6),
-              Text(
+              const Text(
                 "TRACKING TIMELINE",
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1,
-                  color: dividerColor == const Color(0xFF334155)
-                      ? const Color(0xFF94A3B8)
-                      : const Color(0xFF94A3B8),
+                  color: Color(0xFF94A3B8),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
           ...List.generate(steps.length, (i) {
-            final step  = steps[i];
+            final step = steps[i];
             final state = step["state"]!;
             final isLast = i == steps.length - 1;
 
@@ -491,11 +603,8 @@ class TicketDetailPage extends StatelessWidget {
           shape: BoxShape.circle,
           border: Border.all(color: const Color(0xFFBFDBFE), width: 4),
         ),
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-          ),
+        child: const DecoratedBox(
+          decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle),
         ),
       );
     } else {
@@ -545,11 +654,7 @@ class TicketDetailPage extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             "$title: $value",
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
           ),
         ],
       ),

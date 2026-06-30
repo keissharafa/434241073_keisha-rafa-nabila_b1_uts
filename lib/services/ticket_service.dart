@@ -125,4 +125,16 @@ class TicketService {
       'message': message,
     });
   }
+
+  Future<List<Map<String, dynamic>>> getComments({
+    required int ticketId,
+  }) async {
+    final response = await _client
+        .from('ticket_comments')
+        .select()
+        .eq('ticket_id', ticketId)
+        .order('created_at', ascending: true);
+
+    return List<Map<String, dynamic>>.from(response);
+  }
 }

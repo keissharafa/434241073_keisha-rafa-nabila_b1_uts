@@ -1,31 +1,36 @@
 import 'package:flutter/material.dart';
 import '../auth/login_page.dart';
-import 'admin_profile_page.dart';
-import 'admin_ticket_page.dart';
-import 'admin_notification_page.dart';
+import 'helpdesk_profile_page.dart';
+import 'helpdesk_ticket_page.dart';
+import 'helpdesk_notification_page.dart';
 
-class AdminDashboardPage extends StatelessWidget {
+class HelpdeskDashboardPage extends StatelessWidget {
   final Function(bool) toggleTheme;
 
-  const AdminDashboardPage({
-    super.key,
-    required this.toggleTheme,
-  });
+  const HelpdeskDashboardPage({super.key, required this.toggleTheme});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // ── Color tokens ──────────────────────────────────────────────────
-    final bgColor       = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
-    final cardColor     = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final textPrimary   = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
+    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
+    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final textPrimary = isDark
+        ? const Color(0xFFF1F5F9)
+        : const Color(0xFF0F172A);
     final textSecondary = isDark ? const Color(0xFF94A3B8) : Colors.grey[500]!;
-    final borderColor   = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-    final labelColor    = const Color(0xFF94A3B8);
-    final actionCardBg  = isDark ? const Color(0xFF1E293B) : const Color(0xFFEEF2FF);
-    final actionTitleColor = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
-    final navBg         = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final borderColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
+    final labelColor = const Color(0xFF94A3B8);
+    final actionCardBg = isDark
+        ? const Color(0xFF1E293B)
+        : const Color(0xFFEEF2FF);
+    final actionTitleColor = isDark
+        ? const Color(0xFFF1F5F9)
+        : const Color(0xFF0F172A);
+    final navBg = isDark ? const Color(0xFF1E293B) : Colors.white;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -33,7 +38,6 @@ class AdminDashboardPage extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           children: [
-
             // ─── HEADER ─────────────────────────────────────────────
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -70,9 +74,8 @@ class AdminDashboardPage extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => AdminNotificationPage(
-                          toggleTheme: toggleTheme,
-                        ),
+                        builder: (context) =>
+                            HelpdeskNotificationPage(toggleTheme: toggleTheme),
                       ),
                     );
                   },
@@ -138,7 +141,9 @@ class AdminDashboardPage extends StatelessWidget {
               cardColor: cardColor,
               icon: Icons.confirmation_num_outlined,
               iconColor: const Color(0xFF2563EB),
-              iconBg: isDark ? const Color(0xFF1D3461) : const Color(0xFFEFF6FF),
+              iconBg: isDark
+                  ? const Color(0xFF1D3461)
+                  : const Color(0xFFEFF6FF),
               label: "TOTAL TICKETS",
               value: "1,284",
               valueColor: const Color(0xFF2563EB),
@@ -157,13 +162,17 @@ class AdminDashboardPage extends StatelessWidget {
               cardColor: cardColor,
               icon: Icons.star_border_outlined,
               iconColor: const Color(0xFFEF4444),
-              iconBg: isDark ? const Color(0xFF3B0A0A) : const Color(0xFFFEE2E2),
+              iconBg: isDark
+                  ? const Color(0xFF3B0A0A)
+                  : const Color(0xFFFEE2E2),
               label: "OPEN TICKETS",
               value: "42",
               valueColor: const Color(0xFFEF4444),
               badge: "ACTION REQUIRED",
               badgeColor: const Color(0xFFEF4444),
-              badgeBg: isDark ? const Color(0xFF3B0A0A) : const Color(0xFFFEE2E2),
+              badgeBg: isDark
+                  ? const Color(0xFF3B0A0A)
+                  : const Color(0xFFFEE2E2),
               subtext: null,
               subtextColor: null,
             ),
@@ -266,9 +275,10 @@ class AdminDashboardPage extends StatelessWidget {
                             "View\nQueue",
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                                height: 1.3),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              height: 1.3,
+                            ),
                           ),
                         ),
                       ),
@@ -278,7 +288,8 @@ class AdminDashboardPage extends StatelessWidget {
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
                             side: BorderSide(
-                                color: Colors.white.withOpacity(0.4)),
+                              color: Colors.white.withOpacity(0.4),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -289,9 +300,10 @@ class AdminDashboardPage extends StatelessWidget {
                             "New\nTask",
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                                height: 1.3),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              height: 1.3,
+                            ),
                           ),
                         ),
                       ),
@@ -406,7 +418,9 @@ class AdminDashboardPage extends StatelessWidget {
               titleColor: actionTitleColor,
               icon: Icons.confirmation_num_outlined,
               iconColor: const Color(0xFF2563EB),
-              iconBg: isDark ? const Color(0xFF1D3461) : const Color(0xFFEFF6FF),
+              iconBg: isDark
+                  ? const Color(0xFF1D3461)
+                  : const Color(0xFFEFF6FF),
               title: "All Tickets",
               subtitle: "Review and manage the entire helpdesk queue.",
               onTap: () {
@@ -414,7 +428,7 @@ class AdminDashboardPage extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) =>
-                        AdminTicketPage(toggleTheme: toggleTheme),
+                        HelpdeskTicketPage(toggleTheme: toggleTheme),
                   ),
                 );
               },
@@ -425,7 +439,9 @@ class AdminDashboardPage extends StatelessWidget {
               titleColor: actionTitleColor,
               icon: Icons.people_outline,
               iconColor: const Color(0xFF475569),
-              iconBg: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+              iconBg: isDark
+                  ? const Color(0xFF334155)
+                  : const Color(0xFFF1F5F9),
               title: "User Management",
               subtitle: "Handle roles, permissions, and account security.",
               onTap: () {},
@@ -436,7 +452,9 @@ class AdminDashboardPage extends StatelessWidget {
               titleColor: actionTitleColor,
               icon: Icons.bar_chart_outlined,
               iconColor: const Color(0xFF2563EB),
-              iconBg: isDark ? const Color(0xFF1D3461) : const Color(0xFFEFF6FF),
+              iconBg: isDark
+                  ? const Color(0xFF1D3461)
+                  : const Color(0xFFEFF6FF),
               title: "Reports",
               subtitle: "Generate data exports and performance insights.",
               onTap: () {},
@@ -450,7 +468,9 @@ class AdminDashboardPage extends StatelessWidget {
               decoration: BoxDecoration(
                 color: cardColor,
                 borderRadius: BorderRadius.circular(20),
-                border: isDark ? Border.all(color: const Color(0xFF334155)) : null,
+                border: isDark
+                    ? Border.all(color: const Color(0xFF334155))
+                    : null,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
@@ -464,7 +484,9 @@ class AdminDashboardPage extends StatelessWidget {
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: isDark
                           ? const Color(0xFF3B0A0A)
@@ -531,7 +553,9 @@ class AdminDashboardPage extends StatelessWidget {
                           child: const Text(
                             "Take Ownership",
                             style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 14),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
                       ),
@@ -553,9 +577,11 @@ class AdminDashboardPage extends StatelessWidget {
         selectedItemColor: const Color(0xFF2563EB),
         unselectedItemColor: const Color(0xFF94A3B8),
         selectedLabelStyle: const TextStyle(
-            fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.5),
-        unselectedLabelStyle:
-            const TextStyle(fontSize: 10, letterSpacing: 0.5),
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.5,
+        ),
+        unselectedLabelStyle: const TextStyle(fontSize: 10, letterSpacing: 0.5),
         backgroundColor: navBg,
         elevation: 8,
         onTap: (index) {
@@ -565,7 +591,7 @@ class AdminDashboardPage extends StatelessWidget {
               context,
               MaterialPageRoute(
                 builder: (context) =>
-                    AdminTicketPage(toggleTheme: toggleTheme),
+                    HelpdeskTicketPage(toggleTheme: toggleTheme),
               ),
             );
           } else if (index == 2) {
@@ -573,7 +599,7 @@ class AdminDashboardPage extends StatelessWidget {
               context,
               MaterialPageRoute(
                 builder: (context) =>
-                    AdminNotificationPage(toggleTheme: toggleTheme),
+                    HelpdeskNotificationPage(toggleTheme: toggleTheme),
               ),
             );
           } else if (index == 3) {
@@ -581,21 +607,28 @@ class AdminDashboardPage extends StatelessWidget {
               context,
               MaterialPageRoute(
                 builder: (context) =>
-                    AdminProfilePage(toggleTheme: toggleTheme),
+                    HelpdeskProfilePage(toggleTheme: toggleTheme),
               ),
             );
           }
         },
         items: const [
           BottomNavigationBarItem(
-              icon: Icon(Icons.grid_view_rounded), label: "HOME"),
+            icon: Icon(Icons.grid_view_rounded),
+            label: "HOME",
+          ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.confirmation_num_outlined), label: "TICKETS"),
+            icon: Icon(Icons.confirmation_num_outlined),
+            label: "TICKETS",
+          ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.notifications_outlined),
-              label: "NOTIFICATIONS"),
+            icon: Icon(Icons.notifications_outlined),
+            label: "NOTIFICATIONS",
+          ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline), label: "PROFILE"),
+            icon: Icon(Icons.person_outline),
+            label: "PROFILE",
+          ),
         ],
       ),
     );
@@ -637,7 +670,9 @@ class AdminDashboardPage extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-                color: iconBg, borderRadius: BorderRadius.circular(10)),
+              color: iconBg,
+              borderRadius: BorderRadius.circular(10),
+            ),
             child: Icon(icon, color: iconColor, size: 19),
           ),
           const SizedBox(height: 14),
@@ -662,17 +697,19 @@ class AdminDashboardPage extends StatelessWidget {
           ),
           if (subtext != null) ...[
             const SizedBox(height: 6),
-            Text(subtext,
-                style: TextStyle(
-                    fontSize: 12,
-                    color: subtextColor,
-                    fontWeight: FontWeight.w500)),
+            Text(
+              subtext,
+              style: TextStyle(
+                fontSize: 12,
+                color: subtextColor,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
           if (badge != null) ...[
             const SizedBox(height: 10),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: badgeBg,
                 borderRadius: BorderRadius.circular(8),
@@ -713,9 +750,7 @@ class AdminDashboardPage extends StatelessWidget {
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(18),
-          border: isDark
-              ? Border.all(color: const Color(0xFF334155))
-              : null,
+          border: isDark ? Border.all(color: const Color(0xFF334155)) : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -724,7 +759,9 @@ class AdminDashboardPage extends StatelessWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                  color: iconBg, borderRadius: BorderRadius.circular(10)),
+                color: iconBg,
+                borderRadius: BorderRadius.circular(10),
+              ),
               child: Icon(icon, color: iconColor, size: 18),
             ),
             const SizedBox(height: 12),
@@ -740,7 +777,10 @@ class AdminDashboardPage extends StatelessWidget {
             Text(
               subtitle,
               style: const TextStyle(
-                  fontSize: 12, color: Color(0xFF64748B), height: 1.4),
+                fontSize: 12,
+                color: Color(0xFF64748B),
+                height: 1.4,
+              ),
             ),
           ],
         ),
@@ -776,9 +816,10 @@ class AdminDashboardPage extends StatelessWidget {
           child: Text(
             text,
             style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.bold),
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ),

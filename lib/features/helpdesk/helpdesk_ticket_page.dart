@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
-import 'admin_dashboard_page.dart';
-import 'admin_ticket_detail_page.dart';
-import 'admin_notification_page.dart';
-import 'admin_profile_page.dart';
+import 'helpdesk_dashboard_page.dart';
+import 'helpdesk_ticket_detail_page.dart';
+import 'helpdesk_notification_page.dart';
+import 'helpdesk_profile_page.dart';
 import '../../services/ticket_service.dart';
 
-class AdminTicketPage extends StatefulWidget {
+class HelpdeskTicketPage extends StatefulWidget {
   final Function(bool) toggleTheme;
 
-  const AdminTicketPage({super.key, required this.toggleTheme});
+  const HelpdeskTicketPage({super.key, required this.toggleTheme});
 
   @override
-  State<AdminTicketPage> createState() => _AdminTicketPageState();
+  State<HelpdeskTicketPage> createState() => _HelpdeskTicketPageState();
 }
 
-class _AdminTicketPageState extends State<AdminTicketPage> {
+class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
   int _selectedIndex = 1;
   String _selectedStatus = "All Statuses";
   String _selectedPriority = "Any Priority";
@@ -107,10 +107,12 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
           title.contains(q) || id.contains(q) || reporter.contains(q);
 
       final matchesStatus =
-          _selectedStatus == "All Statuses" || ticket["status"] == _selectedStatus;
+          _selectedStatus == "All Statuses" ||
+          ticket["status"] == _selectedStatus;
 
       final matchesPriority =
-          _selectedPriority == "Any Priority" || ticket["priority"] == _selectedPriority;
+          _selectedPriority == "Any Priority" ||
+          ticket["priority"] == _selectedPriority;
 
       return matchesSearch && matchesStatus && matchesPriority;
     }).toList();
@@ -127,21 +129,23 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => AdminDashboardPage(toggleTheme: widget.toggleTheme),
+          builder: (_) =>
+              HelpdeskDashboardPage(toggleTheme: widget.toggleTheme),
         ),
       );
     } else if (index == 2) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => AdminNotificationPage(toggleTheme: widget.toggleTheme),
+          builder: (_) =>
+              HelpdeskNotificationPage(toggleTheme: widget.toggleTheme),
         ),
       );
     } else if (index == 3) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => AdminProfilePage(toggleTheme: widget.toggleTheme),
+          builder: (_) => HelpdeskProfilePage(toggleTheme: widget.toggleTheme),
         ),
       );
     }
@@ -215,11 +219,17 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
 
     final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
     final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final textPrimary = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
+    final textPrimary = isDark
+        ? const Color(0xFFF1F5F9)
+        : const Color(0xFF0F172A);
     final textSecondary = isDark ? const Color(0xFF94A3B8) : Colors.grey[500]!;
     final fieldBg = isDark ? const Color(0xFF0F172A) : const Color(0xFFEEF2FF);
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-    final dropdownBg = isDark ? const Color(0xFF1E293B) : const Color(0xFFEEF2FF);
+    final borderColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
+    final dropdownBg = isDark
+        ? const Color(0xFF1E293B)
+        : const Color(0xFFEEF2FF);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -229,7 +239,10 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
             : RefreshIndicator(
                 onRefresh: _loadAdminTickets,
                 child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
                   children: [
                     // HEADER
                     Row(
@@ -267,7 +280,7 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => AdminNotificationPage(
+                                builder: (_) => HelpdeskNotificationPage(
                                   toggleTheme: widget.toggleTheme,
                                 ),
                               ),
@@ -498,10 +511,15 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                                       ),
                                     ),
                                     onPressed: () => setState(() {}),
-                                    icon: const Icon(Icons.filter_list, size: 16),
+                                    icon: const Icon(
+                                      Icons.filter_list,
+                                      size: 16,
+                                    ),
                                     label: const Text(
                                       "Apply Filters",
-                                      style: TextStyle(fontWeight: FontWeight.w600),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -538,7 +556,10 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                     const SizedBox(height: 20),
 
                     if (_filteredTickets.isEmpty)
-                      _emptyState(cardColor: cardColor, textPrimary: textPrimary),
+                      _emptyState(
+                        cardColor: cardColor,
+                        textPrimary: textPrimary,
+                      ),
 
                     ..._filteredTickets.map(
                       (t) => _ticketCard(
@@ -562,11 +583,21 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                         ),
                         Row(
                           children: [
-                            _pageBtn(Icons.chevron_left, false, cardColor, borderColor),
+                            _pageBtn(
+                              Icons.chevron_left,
+                              false,
+                              cardColor,
+                              borderColor,
+                            ),
                             const SizedBox(width: 6),
                             _pageNumBtn("1", true),
                             const SizedBox(width: 6),
-                            _pageBtn(Icons.chevron_right, true, cardColor, borderColor),
+                            _pageBtn(
+                              Icons.chevron_right,
+                              true,
+                              cardColor,
+                              borderColor,
+                            ),
                           ],
                         ),
                       ],
@@ -589,10 +620,7 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
           fontWeight: FontWeight.w600,
           letterSpacing: 0.5,
         ),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 10,
-          letterSpacing: 0.5,
-        ),
+        unselectedLabelStyle: const TextStyle(fontSize: 10, letterSpacing: 0.5),
         backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
         elevation: 8,
         items: const [
@@ -617,10 +645,7 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
     );
   }
 
-  Widget _emptyState({
-    required Color cardColor,
-    required Color textPrimary,
-  }) {
+  Widget _emptyState({required Color cardColor, required Color textPrimary}) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 16),
@@ -639,19 +664,13 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
           const SizedBox(height: 10),
           Text(
             "No tickets found",
-            style: TextStyle(
-              color: textPrimary,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           const Text(
             "Try changing the filter or pull to refresh.",
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF94A3B8),
-              fontSize: 13,
-            ),
+            style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
           ),
         ],
       ),
@@ -675,7 +694,7 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
         final result = await Navigator.push<Map<String, dynamic>>(
           context,
           MaterialPageRoute(
-            builder: (_) => AdminTicketDetailPage(
+            builder: (_) => HelpdeskTicketDetailPage(
               ticket: t,
               toggleTheme: widget.toggleTheme,
             ),
@@ -701,7 +720,10 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFEFF6FF),
                     borderRadius: BorderRadius.circular(6),
@@ -770,7 +792,10 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: _statusBg(status),
                     borderRadius: BorderRadius.circular(8),
@@ -885,10 +910,7 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
           dropdownColor: bg,
           borderRadius: BorderRadius.circular(12),
           items: items.map((item) {
-            return DropdownMenuItem(
-              value: item,
-              child: Text(item),
-            );
+            return DropdownMenuItem(value: item, child: Text(item));
           }).toList(),
           onChanged: onChanged,
         ),

@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
 import '../../services/ticket_service.dart';
 
-class AdminTicketDetailPage extends StatefulWidget {
+class HelpdeskTicketDetailPage extends StatefulWidget {
   final Map<String, dynamic> ticket;
   final Function(bool) toggleTheme;
 
-  const AdminTicketDetailPage({
+  const HelpdeskTicketDetailPage({
     super.key,
     required this.ticket,
     required this.toggleTheme,
   });
 
   @override
-  State<AdminTicketDetailPage> createState() => _AdminTicketDetailPageState();
+  State<HelpdeskTicketDetailPage> createState() =>
+      _HelpdeskTicketDetailPageState();
 }
 
-class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
+class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
   final TextEditingController _commentController = TextEditingController();
   final TicketService _ticketService = TicketService();
 
@@ -181,11 +182,19 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
 
     final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
     final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final textPrimary = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
-    final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final textPrimary = isDark
+        ? const Color(0xFFF1F5F9)
+        : const Color(0xFF0F172A);
+    final textSecondary = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF64748B);
+    final borderColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
     final labelColor = const Color(0xFF94A3B8);
-    final dropdownBg = isDark ? const Color(0xFF0F172A) : const Color(0xFFEEF2FF);
+    final dropdownBg = isDark
+        ? const Color(0xFF0F172A)
+        : const Color(0xFFEEF2FF);
 
     final suggestedTeam = _suggestTeamFromCategory(widget.ticket["category"]);
 
@@ -201,7 +210,10 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Color(0xFF2563EB)),
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      color: Color(0xFF2563EB),
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                   const Expanded(
@@ -230,7 +242,10 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
 
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
                 children: [
                   // ID + TITLE
                   Text(
@@ -243,7 +258,8 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    widget.ticket["title"] ?? "I can’t log in on the mobile app",
+                    widget.ticket["title"] ??
+                        "I can’t log in on the mobile app",
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -423,7 +439,8 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                widget.ticket["category"] ?? "Technical Support",
+                                widget.ticket["category"] ??
+                                    "Technical Support",
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
@@ -565,12 +582,8 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                   const SizedBox(height: 20),
 
                   ..._comments.map(
-                    (c) => _buildChatBubble(
-                      c,
-                      isDark,
-                      cardColor,
-                      textSecondary,
-                    ),
+                    (c) =>
+                        _buildChatBubble(c, isDark, cardColor, textSecondary),
                   ),
 
                   const SizedBox(height: 8),
@@ -656,17 +669,16 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
       padding: const EdgeInsets.only(bottom: 20),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment:
-            isAdmin ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isAdmin
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         children: [
-          if (!isAdmin) ...[
-            _avatar(false),
-            const SizedBox(width: 10),
-          ],
+          if (!isAdmin) ...[_avatar(false), const SizedBox(width: 10)],
           Flexible(
             child: Column(
-              crossAxisAlignment:
-                  isAdmin ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: isAdmin
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -677,8 +689,8 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                     color: isAdmin
                         ? const Color(0xFF2563EB)
                         : (isDark
-                            ? const Color(0xFF1E293B)
-                            : const Color(0xFFEEF2FF)),
+                              ? const Color(0xFF1E293B)
+                              : const Color(0xFFEEF2FF)),
                     borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(isAdmin ? 16 : 4),
                       topRight: Radius.circular(isAdmin ? 4 : 16),
@@ -694,8 +706,8 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                       color: isAdmin
                           ? Colors.white
                           : (isDark
-                              ? const Color(0xFFF1F5F9)
-                              : const Color(0xFF1E293B)),
+                                ? const Color(0xFFF1F5F9)
+                                : const Color(0xFF1E293B)),
                     ),
                   ),
                 ),
@@ -707,10 +719,7 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
               ],
             ),
           ),
-          if (isAdmin) ...[
-            const SizedBox(width: 10),
-            _avatar(true),
-          ],
+          if (isAdmin) ...[const SizedBox(width: 10), _avatar(true)],
         ],
       ),
     );
@@ -762,10 +771,7 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
             color: textColor,
           ),
           items: items.map((item) {
-            return DropdownMenuItem(
-              value: item,
-              child: Text(item),
-            );
+            return DropdownMenuItem(value: item, child: Text(item));
           }).toList(),
           onChanged: onChanged,
         ),
@@ -811,7 +817,11 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
             return items.map((item) {
               return Row(
                 children: [
-                  Icon(teamIcon(item), size: 18, color: const Color(0xFF2563EB)),
+                  Icon(
+                    teamIcon(item),
+                    size: 18,
+                    color: const Color(0xFF2563EB),
+                  ),
                   const SizedBox(width: 10),
                   Text(
                     item,
@@ -830,7 +840,11 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
               value: item,
               child: Row(
                 children: [
-                  Icon(teamIcon(item), size: 18, color: const Color(0xFF2563EB)),
+                  Icon(
+                    teamIcon(item),
+                    size: 18,
+                    color: const Color(0xFF2563EB),
+                  ),
                   const SizedBox(width: 10),
                   Text(
                     item,

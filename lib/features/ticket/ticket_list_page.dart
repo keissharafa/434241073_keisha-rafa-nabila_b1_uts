@@ -38,6 +38,7 @@ class _TicketListPageState extends State<TicketListPage> {
       setState(() {
         _tickets = data.map((ticket) {
           return {
+            "ticketId": ticket["id"],
             "id": ticket["ticket_code"] ?? "#TK-0000",
             "title": ticket["title"] ?? "Untitled",
             "date": _formatDate(ticket["created_at"]),
@@ -46,6 +47,9 @@ class _TicketListPageState extends State<TicketListPage> {
             "category": ticket["category"] ?? "Technical Support",
             "priority": ticket["priority"],
             "requestedPriority": ticket["requested_priority"],
+            "assignedTo": ticket["assigned_to"],
+            "createdAt": ticket["created_at"],
+            "updatedAt": ticket["updated_at"],
           };
         }).toList();
 
@@ -399,6 +403,7 @@ class _TicketListPageState extends State<TicketListPage> {
                         description: t["description"] ?? "No description",
                         cardColor: cardColor,
                         textPrimary: textPrimary,
+                        rawTicket: t,
                       ),
                     ),
 
@@ -415,6 +420,7 @@ class _TicketListPageState extends State<TicketListPage> {
                         description: t["description"] ?? "No description provided.",
                         cardColor: cardColor,
                         textPrimary: textPrimary,
+                        rawTicket: t,
                       ),
                     ),
 
@@ -569,6 +575,7 @@ class _TicketListPageState extends State<TicketListPage> {
     required String status,
     required Color cardColor,
     required Color textPrimary,
+    required Map<String, dynamic> rawTicket,
     String description = "No description provided.",
   }) {
     Color statusColor;
@@ -602,14 +609,7 @@ class _TicketListPageState extends State<TicketListPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => TicketDetailPage(
-              ticket: {
-                "id": id,
-                "title": title,
-                "status": status,
-                "description": description,
-              },
-            ),
+            builder: (_) => TicketDetailPage(ticket: rawTicket),
           ),
         );
       },

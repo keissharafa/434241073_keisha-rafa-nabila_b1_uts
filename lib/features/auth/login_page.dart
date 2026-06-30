@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../dashboard/dashboard_page.dart';
-import '../admin/admin_dashboard_page.dart'; 
+import '../helpdesk/helpdesk_dashboard_page.dart';
 import '../auth/register_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -16,14 +16,8 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController passwordController = TextEditingController();
 
   final Map<String, Map<String, String>> users = {
-    "admin@gmail.com": {
-      "password": "admin123",
-      "role": "admin",
-    },
-    "user@gmail.com": {
-      "password": "user123",
-      "role": "user",
-    },
+    "admin@gmail.com": {"password": "admin123", "role": "admin"},
+    "user@gmail.com": {"password": "user123", "role": "user"},
   };
 
   bool _keepLoggedIn = false;
@@ -33,16 +27,20 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor       = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
-    final cardColor     = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final textPrimary   = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
+    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
+    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final textPrimary = isDark
+        ? const Color(0xFFF1F5F9)
+        : const Color(0xFF0F172A);
     final textSecondary = isDark ? const Color(0xFF94A3B8) : Colors.grey[500]!;
-    final fieldBg       = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
-    final iconColor     = isDark ? const Color(0xFF64748B) : Colors.grey[500]!;
-    final hintColor     = isDark ? const Color(0xFF64748B) : Colors.grey[400]!;
-    final labelColor    = isDark ? const Color(0xFFCBD5E1) : const Color(0xFF0F172A);
-    final footerColor   = isDark ? const Color(0xFF64748B) : Colors.grey[400]!;
-    final shadowColor   = const Color.fromRGBO(0, 0, 0, 0.06);
+    final fieldBg = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
+    final iconColor = isDark ? const Color(0xFF64748B) : Colors.grey[500]!;
+    final hintColor = isDark ? const Color(0xFF64748B) : Colors.grey[400]!;
+    final labelColor = isDark
+        ? const Color(0xFFCBD5E1)
+        : const Color(0xFF0F172A);
+    final footerColor = isDark ? const Color(0xFF64748B) : Colors.grey[400]!;
+    final shadowColor = const Color.fromRGBO(0, 0, 0, 0.06);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -66,7 +64,6 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
                   // 🔷 Logo
                   Row(
                     children: [
@@ -115,7 +112,14 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 28),
 
                   // Username
-                  Text("Username", style: TextStyle(color: labelColor, fontWeight: FontWeight.w500, fontSize: 14)),
+                  Text(
+                    "Username",
+                    style: TextStyle(
+                      color: labelColor,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: usernameController,
@@ -123,15 +127,31 @@ class _LoginPageState extends State<LoginPage> {
                     decoration: InputDecoration(
                       hintText: "e.g. alex_support",
                       hintStyle: TextStyle(color: hintColor, fontSize: 14),
-                      prefixIcon: Icon(Icons.person_outline, color: iconColor, size: 20),
+                      prefixIcon: Icon(
+                        Icons.person_outline,
+                        color: iconColor,
+                        size: 20,
+                      ),
                       filled: true,
                       fillColor: fieldBg,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                        horizontal: 16,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF2563EB),
+                          width: 1.5,
+                        ),
                       ),
                     ),
                   ),
@@ -142,12 +162,23 @@ class _LoginPageState extends State<LoginPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("Password", style: TextStyle(color: labelColor, fontWeight: FontWeight.w500, fontSize: 14)),
+                      Text(
+                        "Password",
+                        style: TextStyle(
+                          color: labelColor,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                        ),
+                      ),
                       GestureDetector(
                         onTap: () {},
                         child: const Text(
                           "FORGOT PASSWORD?",
-                          style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold, fontSize: 11),
+                          style: TextStyle(
+                            color: Color(0xFF2563EB),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
                         ),
                       ),
                     ],
@@ -160,23 +191,43 @@ class _LoginPageState extends State<LoginPage> {
                     obscureText: _obscurePassword,
                     style: TextStyle(color: textPrimary, fontSize: 14),
                     decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.lock_outline, color: iconColor, size: 20),
+                      prefixIcon: Icon(
+                        Icons.lock_outline,
+                        color: iconColor,
+                        size: 20,
+                      ),
                       suffixIcon: GestureDetector(
-                        onTap: () => setState(() => _obscurePassword = !_obscurePassword),
+                        onTap: () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
                         child: Icon(
-                          _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                          _obscurePassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
                           color: iconColor,
                           size: 20,
                         ),
                       ),
                       filled: true,
                       fillColor: fieldBg,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                        horizontal: 16,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF2563EB),
+                          width: 1.5,
+                        ),
                       ),
                     ),
                   ),
@@ -191,12 +242,18 @@ class _LoginPageState extends State<LoginPage> {
                         activeColor: const Color(0xFF2563EB),
                         checkColor: Colors.white,
                         side: BorderSide(
-                          color: isDark ? const Color(0xFF475569) : Colors.grey[400]!,
+                          color: isDark
+                              ? const Color(0xFF475569)
+                              : Colors.grey[400]!,
                           width: 1.5,
                         ),
-                        onChanged: (value) => setState(() => _keepLoggedIn = value ?? false),
+                        onChanged: (value) =>
+                            setState(() => _keepLoggedIn = value ?? false),
                       ),
-                      Text("Keep me logged in", style: TextStyle(color: labelColor, fontSize: 14)),
+                      Text(
+                        "Keep me logged in",
+                        style: TextStyle(color: labelColor, fontSize: 14),
+                      ),
                     ],
                   ),
 
@@ -211,32 +268,30 @@ class _LoginPageState extends State<LoginPage> {
                         backgroundColor: const Color(0xFF2563EB),
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
                       onPressed: () {
-                        final email    = usernameController.text.trim();
+                        final email = usernameController.text.trim();
                         final password = passwordController.text.trim();
-                        
+
                         //debug
                         print("EMAIL: $email");
                         print("DATA: ${users[email]}");
                         print("ROLE: ${users[email]?["role"]}");
 
-
                         if (users.containsKey(email) &&
                             users[email]!["password"] == password) {
-
                           final role = users[email]!["role"]!;
 
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
                               builder: (context) {
-                                // ✅ Routing berdasarkan role:
-                                // "admin" → AdminDashboardPage
-                                // "user"  → DashboardPage
-                                if (role == "admin") {
-                                  return AdminDashboardPage(
+                                // Routing berdasarkan role:
+                                if (role == "helpdesk") {
+                                  return HelpdeskDashboardPage(
                                     toggleTheme: widget.toggleTheme,
                                   );
                                 } else {
@@ -248,20 +303,25 @@ class _LoginPageState extends State<LoginPage> {
                               },
                             ),
                           );
-
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: const Row(
                                 children: [
-                                  Icon(Icons.error_outline, color: Colors.white, size: 18),
+                                  Icon(
+                                    Icons.error_outline,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
                                   SizedBox(width: 10),
                                   Text("Email atau password salah"),
                                 ],
                               ),
                               backgroundColor: const Color(0xFFEF4444),
                               behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                               margin: const EdgeInsets.all(16),
                             ),
                           );
@@ -269,7 +329,10 @@ class _LoginPageState extends State<LoginPage> {
                       },
                       child: const Text(
                         "Login",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
@@ -280,19 +343,27 @@ class _LoginPageState extends State<LoginPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text("Don't have an account? ", style: TextStyle(color: textSecondary, fontSize: 14)),
+                      Text(
+                        "Don't have an account? ",
+                        style: TextStyle(color: textSecondary, fontSize: 14),
+                      ),
                       GestureDetector(
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => RegisterPage(toggleTheme: widget.toggleTheme),
+                              builder: (context) =>
+                                  RegisterPage(toggleTheme: widget.toggleTheme),
                             ),
                           );
                         },
                         child: const Text(
                           "Register",
-                          style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold, fontSize: 14),
+                          style: TextStyle(
+                            color: Color(0xFF2563EB),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
                         ),
                       ),
                     ],
