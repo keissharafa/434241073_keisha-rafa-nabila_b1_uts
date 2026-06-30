@@ -511,6 +511,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     // 🌙 Dark Mode
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      // bagian sitch dark mode
                       child: SwitchListTile(
                         contentPadding: EdgeInsets.zero,
                         secondary: Container(
@@ -540,9 +541,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         value: isDarkMode,
                         activeColor: const Color(0xFF2563EB),
-                        onChanged: (value) {
+                        onChanged: (value) { // ketika switch di toggle, klo true berarti dark mode aktif, klo false berarti dark mode mati
                           setState(() => isDark = value);
-                          widget.toggleTheme(value);
+                          widget.toggleTheme(value); // ProfilePage mengirim sinyal ke main.dart klo user pilih dark mode (true/false)
                         },
                       ),
                     ),
