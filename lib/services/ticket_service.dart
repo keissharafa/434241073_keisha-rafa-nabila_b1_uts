@@ -3,6 +3,46 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class TicketService {
   final SupabaseClient _client = Supabase.instance.client;
 
+  // 1. FUNGSI REAL-TIME (Sudah fix sintaks)
+  RealtimeChannel subscribeToNotifications(
+    String roleTarget,
+    Function(Map<String, dynamic>) onNewNotification,
+  ) {
+    return _client
+        .channel('public:notifications')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'notifications',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'role_target',
+            value: roleTarget,
+          ),
+          callback: (payload) {
+            onNewNotification(payload.newRecord);
+          },
+        )
+        .subscribe();
+  }
+
+  // 2. FUNGSI STATISTIK (Versi aman tanpa error FetchOptions)
+  Future<int> getTicketCount({String? status, String? assignedTo}) async {
+    var query = _client.from('tickets').select('id');
+
+    if (status != null) {
+      query = query.eq('status', status);
+    }
+    if (assignedTo != null) {
+      query = query.eq('assigned_to', assignedTo);
+    }
+
+    final response = await query;
+    // Menggunakan .length langsung dari response list agar kompatibel dengan semua versi SDK
+    return (response as List).length;
+  }
+
+  // 3. FUNGSI TIKET (User & Admin)
   Future<List<Map<String, dynamic>>> getUserTickets() async {
     final response = await _client
         .from('tickets')
@@ -26,6 +66,7 @@ class TicketService {
     required String category,
     required String description,
     required String requestedPriority,
+    String? attachmentUrl,
   }) async {
     final ticketCode = '#TK-${DateTime.now().millisecondsSinceEpoch % 10000}';
 
@@ -37,19 +78,13 @@ class TicketService {
           'description': description,
           'category': category,
           'status': 'OPEN',
-
-          // priority final admin masih kosong dulu
           'priority': null,
-
-          // ini priority yang dipilih user di form create ticket
           'requested_priority': requestedPriority,
-
-          // assigned_to nanti ditentukan admin/helpdesk
           'assigned_to': null,
-
           'reporter': 'Alex Johnson',
           'source': 'Mobile App',
           'strikethrough': false,
+          'attachment_url': attachmentUrl,
         })
         .select()
         .single();
@@ -79,23 +114,40 @@ class TicketService {
           'status': status,
           'priority': priority,
           'assigned_to': assignedTo,
-          'strikethrough': status == 'RESOLVED',
+          'strikethrough': status == 'CLOSED' || status == 'RESOLVED',
           'updated_at': DateTime.now().toIso8601String(),
         })
         .eq('id', id)
         .select()
         .single();
 
-    await _client.from('notifications').insert({
-      'role_target': 'user',
-      'title': 'Ticket Updated',
-      'message':
-          'Your ticket ${updatedTicket['ticket_code']} is now $status and assigned to $assignedTo',
-      'ticket_id': id,
-      'status': status,
-      'notification_type': 'ticket_update',
-      'is_read': false,
-    });
+    final List<Map<String, dynamic>> notificationsToInsert = [
+      {
+        'role_target': 'user',
+        'title': 'Ticket Updated',
+        'message':
+            'Your ticket ${updatedTicket['ticket_code']} is now $status and assigned to $assignedTo',
+        'ticket_id': id,
+        'status': status,
+        'notification_type': 'ticket_update',
+        'is_read': false,
+      },
+    ];
+
+    if (assignedTo != 'Unassigned' && assignedTo.isNotEmpty) {
+      notificationsToInsert.add({
+        'role_target': 'admin_helpdesk',
+        'title': 'Ticket Assigned',
+        'message':
+            'Admin assigned ticket ${updatedTicket['ticket_code']} to $assignedTo',
+        'ticket_id': id,
+        'status': status,
+        'notification_type': 'ticket_assigned',
+        'is_read': false,
+      });
+    }
+
+    await _client.from('notifications').insert(notificationsToInsert);
 
     return Map<String, dynamic>.from(updatedTicket);
   }

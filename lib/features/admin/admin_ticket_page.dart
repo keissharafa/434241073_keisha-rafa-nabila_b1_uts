@@ -1,35 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'helpdesk_dashboard_page.dart';
-import 'helpdesk_notification_page.dart';
-import 'helpdesk_profile_page.dart';
-import 'helpdesk_ticket_detail_page.dart';
+import '../../services/ticket_service.dart';
+import 'admin_dashboard_page.dart';
 
-class HelpdeskTicketPage extends StatefulWidget {
+import 'admin_ticket_detail_page.dart';
+import 'admin_notification_page.dart';
+import 'admin_profile_page.dart';
+
+class AdminTicketPage extends StatefulWidget {
   final Function(bool) toggleTheme;
 
-  const HelpdeskTicketPage({super.key, required this.toggleTheme});
+  const AdminTicketPage({super.key, required this.toggleTheme});
 
   @override
-  State<HelpdeskTicketPage> createState() => _HelpdeskTicketPageState();
+  State<AdminTicketPage> createState() => _AdminTicketPageState();
 }
 
-class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
-  int _selectedIndex = 1;
+class _AdminTicketPageState extends State<AdminTicketPage> {
+  int _selectedIndex = 1; // Index untuk All Tickets
   String _selectedStatus = "All Statuses";
   String _selectedPriority = "Any Priority";
 
   final TextEditingController _searchController = TextEditingController();
+  final TicketService _ticketService = TicketService();
 
   List<Map<String, dynamic>> _tickets = [];
   bool isLoading = true;
-  String _userName = "";
 
   @override
   void initState() {
     super.initState();
-    _loadHelpdeskTickets();
+    _loadAdminTickets();
   }
 
   @override
@@ -38,22 +38,14 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
     super.dispose();
   }
 
-  Future<void> _loadHelpdeskTickets() async {
+  Future<void> _loadAdminTickets() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      _userName = prefs.getString('user_name') ?? "Alex Support";
-
-      // 👇 INI BAGIAN YANG DIPERBAIKI (assigned_to) 👇
-      final response = await Supabase.instance.client
-          .from('tickets')
-          .select()
-          .eq('assigned_to', _userName)
-          .order('created_at', ascending: false);
+      final data = await _ticketService.getAdminTickets();
 
       if (!mounted) return;
 
       setState(() {
-        _tickets = (response as List).map((ticket) {
+        _tickets = data.map((ticket) {
           return {
             "dbId": ticket["id"],
             "id": ticket["ticket_code"] ?? "#TK-0000",
@@ -61,13 +53,13 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
             "description": ticket["description"] ?? "No description",
             "category": ticket["category"] ?? "Technical Support",
             "reporter": ticket["reporter"] ?? "Unknown User",
+            "source": ticket["source"] ?? "Mobile App",
             "status": ticket["status"] ?? "OPEN",
             "priority": ticket["priority"] ?? "LOW",
             "requestedPriority": ticket["requested_priority"] ?? "-",
             "assignedTo": ticket["assigned_to"] ?? "Unassigned",
             "time": _timeAgo(ticket["created_at"]),
             "strikethrough": ticket["strikethrough"] ?? false,
-            "attachment_url": ticket["attachment_url"],
           };
         }).toList();
 
@@ -78,7 +70,7 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
       setState(() => isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Failed to load tickets: $e"),
+          content: Text("Failed to load admin tickets: $e"),
           backgroundColor: Colors.red,
         ),
       );
@@ -129,6 +121,7 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
         .length;
   }
 
+  // 👇 Navigasi yang sudah diperbaiki
   void _onNavTap(int index) {
     if (index == _selectedIndex) return;
 
@@ -136,8 +129,7 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) =>
-              HelpdeskDashboardPage(toggleTheme: widget.toggleTheme),
+          builder: (_) => AdminDashboardPage(toggleTheme: widget.toggleTheme),
         ),
       );
     } else if (index == 2) {
@@ -145,14 +137,14 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
         context,
         MaterialPageRoute(
           builder: (_) =>
-              HelpdeskNotificationPage(toggleTheme: widget.toggleTheme),
+              AdminNotificationPage(toggleTheme: widget.toggleTheme),
         ),
       );
     } else if (index == 3) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => HelpdeskProfilePage(toggleTheme: widget.toggleTheme),
+          builder: (_) => AdminProfilePage(toggleTheme: widget.toggleTheme),
         ),
       );
     }
@@ -247,7 +239,7 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
             : RefreshIndicator(
-                onRefresh: _loadHelpdeskTickets,
+                onRefresh: _loadAdminTickets,
                 child: ListView(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
@@ -268,7 +260,7 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: const Icon(
-                                Icons.confirmation_num,
+                                Icons.admin_panel_settings,
                                 color: Colors.white,
                                 size: 20,
                               ),
@@ -285,20 +277,48 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                             ),
                           ],
                         ),
-                        Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: cardColor,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: borderColor),
-                          ),
-                          child: Icon(
-                            Icons.notifications_outlined,
-                            color: isDark
-                                ? const Color(0xFF94A3B8)
-                                : const Color(0xFF475569),
-                            size: 20,
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => AdminNotificationPage(
+                                  toggleTheme: widget.toggleTheme,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Stack(
+                            children: [
+                              Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: cardColor,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: borderColor),
+                                ),
+                                child: Icon(
+                                  Icons.notifications_outlined,
+                                  color: isDark
+                                      ? const Color(0xFF94A3B8)
+                                      : const Color(0xFF475569),
+                                  size: 20,
+                                ),
+                              ),
+                              Positioned(
+                                right: 6,
+                                top: 6,
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFEF4444),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -307,7 +327,7 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                     const SizedBox(height: 24),
 
                     Text(
-                      "Ticket Command Center",
+                      "Global Ticket Queue",
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -317,7 +337,7 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "Your assigned tasks.",
+                      "Review and assign tickets to helpdesk agents.",
                       style: TextStyle(
                         color: textSecondary,
                         fontSize: 13,
@@ -352,9 +372,16 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                             margin: const EdgeInsets.symmetric(horizontal: 20),
                           ),
                           _miniStat(
-                            "AVG. RESPONSE",
-                            "14m",
-                            const Color(0xFFF97316),
+                            "UNASSIGNED",
+                            _tickets
+                                .where(
+                                  (t) =>
+                                      t["assignedTo"] == "Unassigned" &&
+                                      t["status"] != "RESOLVED",
+                                )
+                                .length
+                                .toString(),
+                            const Color(0xFFEF4444),
                           ),
                         ],
                       ),
@@ -388,10 +415,15 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                             onChanged: (_) => setState(() {}),
                             style: TextStyle(fontSize: 14, color: textPrimary),
                             decoration: InputDecoration(
-                              hintText: "ID, Subject...",
+                              hintText: "ID, Subject, or User...",
                               hintStyle: TextStyle(
                                 color: textSecondary,
                                 fontSize: 14,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.search,
+                                color: textSecondary,
+                                size: 18,
                               ),
                               filled: true,
                               fillColor: fieldBg,
@@ -403,16 +435,34 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                                 borderRadius: BorderRadius.circular(10),
                                 borderSide: BorderSide.none,
                               ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFF2563EB),
+                                  width: 1.5,
+                                ),
+                              ),
                             ),
                           ),
 
                           const SizedBox(height: 14),
 
+                          Text(
+                            "STATUS",
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: textSecondary,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
                           _dropdown(
                             value: _selectedStatus,
                             items: const [
                               "All Statuses",
                               "OPEN",
+                              "PENDING",
                               "IN PROGRESS",
                               "RESOLVED",
                               "CLOSED",
@@ -427,6 +477,16 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
 
                           const SizedBox(height: 14),
 
+                          Text(
+                            "PRIORITY",
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: textSecondary,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
                           _dropdown(
                             value: _selectedPriority,
                             items: const [
@@ -442,6 +502,62 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                               if (v == null) return;
                               setState(() => _selectedPriority = v);
                             },
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          Row(
+                            children: [
+                              Expanded(
+                                child: SizedBox(
+                                  height: 44,
+                                  child: ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF2563EB),
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                    onPressed: () => setState(() {}),
+                                    icon: const Icon(
+                                      Icons.filter_list,
+                                      size: 16,
+                                    ),
+                                    label: const Text(
+                                      "Apply Filters",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: fieldBg,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: IconButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _selectedStatus = "All Statuses";
+                                      _selectedPriority = "Any Priority";
+                                      _searchController.clear();
+                                    });
+                                  },
+                                  icon: const Icon(
+                                    Icons.refresh_rounded,
+                                    color: Color(0xFF2563EB),
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -464,6 +580,37 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                         borderColor,
                         isDark,
                       ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Showing ${_filteredTickets.length} of ${_tickets.length}",
+                          style: TextStyle(fontSize: 12, color: textSecondary),
+                        ),
+                        Row(
+                          children: [
+                            _pageBtn(
+                              Icons.chevron_left,
+                              false,
+                              cardColor,
+                              borderColor,
+                            ),
+                            const SizedBox(width: 6),
+                            _pageNumBtn("1", true),
+                            const SizedBox(width: 6),
+                            _pageBtn(
+                              Icons.chevron_right,
+                              true,
+                              cardColor,
+                              borderColor,
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
 
                     const SizedBox(height: 20),
@@ -493,7 +640,7 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.confirmation_num_outlined),
-            label: "TICKETS",
+            label: "ALL TICKETS",
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.notifications_outlined),
@@ -519,12 +666,22 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
       ),
       child: Column(
         children: [
-          const SizedBox(height: 10),
-          Text(
-            "No tickets assigned",
-            style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold),
+          const Icon(
+            Icons.confirmation_num_outlined,
+            color: Color(0xFF94A3B8),
+            size: 36,
           ),
           const SizedBox(height: 10),
+          Text(
+            "No tickets found",
+            style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            "Try changing the filter or pull to refresh.",
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+          ),
         ],
       ),
     );
@@ -547,14 +704,14 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
         final result = await Navigator.push<bool>(
           context,
           MaterialPageRoute(
-            builder: (_) => HelpdeskTicketDetailPage(
+            builder: (_) => AdminTicketDetailPage(
               ticket: t,
               toggleTheme: widget.toggleTheme,
             ),
           ),
         );
         if (result == true) {
-          await _loadHelpdeskTickets();
+          await _loadAdminTickets();
         }
       },
       child: Container(
@@ -608,7 +765,42 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                 ),
               ],
             ),
+
+            const SizedBox(height: 8),
+
+            Row(
+              children: [
+                Text(
+                  "Reported by ${t["reporter"] ?? "Unknown"}",
+                  style: TextStyle(fontSize: 12, color: textSecondary),
+                ),
+                Container(
+                  width: 3,
+                  height: 3,
+                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF94A3B8),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    "Assigned to: ${t["assignedTo"] ?? "Unassigned"}",
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: t["assignedTo"] == "Unassigned"
+                          ? const Color(0xFFEF4444)
+                          : const Color(0xFF2563EB),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+
             const SizedBox(height: 10),
+
             Row(
               children: [
                 Container(
@@ -630,14 +822,30 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                     ),
                   ),
                 ),
-                const Spacer(),
+              ],
+            ),
+
+            const SizedBox(height: 6),
+
+            Text(
+              "${_priorityPrefix(priority)}$priority",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: _priorityColor(priority),
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Icon(Icons.access_time, size: 12, color: textSecondary),
+                const SizedBox(width: 4),
                 Text(
-                  "${_priorityPrefix(priority)}$priority",
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: _priorityColor(priority),
-                  ),
+                  t["time"] ?? "Just now",
+                  style: TextStyle(fontSize: 11, color: textSecondary),
                 ),
               ],
             ),
@@ -713,10 +921,53 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
           style: TextStyle(fontSize: 14, color: textColor),
           dropdownColor: bg,
           borderRadius: BorderRadius.circular(12),
-          items: items
-              .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-              .toList(),
+          items: items.map((item) {
+            return DropdownMenuItem(value: item, child: Text(item));
+          }).toList(),
           onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+
+  Widget _pageBtn(
+    IconData icon,
+    bool active,
+    Color cardColor,
+    Color borderColor,
+  ) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: borderColor),
+      ),
+      child: Icon(
+        icon,
+        size: 18,
+        color: active ? const Color(0xFF2563EB) : const Color(0xFF94A3B8),
+      ),
+    );
+  }
+
+  Widget _pageNumBtn(String num, bool active) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: active ? const Color(0xFF2563EB) : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Center(
+        child: Text(
+          num,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: active ? Colors.white : const Color(0xFF94A3B8),
+          ),
         ),
       ),
     );

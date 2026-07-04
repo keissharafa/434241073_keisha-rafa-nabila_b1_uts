@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../dashboard/dashboard_page.dart';
 import '../ticket/ticket_list_page.dart';
 import '../profile/profile_page.dart';
@@ -6,10 +7,12 @@ import '../../services/ticket_service.dart';
 
 class NotificationPage extends StatefulWidget {
   final Function(bool)? toggleTheme;
+  final String roleTarget;
 
   const NotificationPage({
     super.key,
     this.toggleTheme,
+    this.roleTarget = "user",
   });
 
   @override
@@ -31,7 +34,7 @@ class _NotificationPageState extends State<NotificationPage> {
   Future<void> _loadNotifications() async {
     try {
       final data = await _ticketService.getNotifications(
-        roleTarget: "user",
+        roleTarget: widget.roleTarget,
       );
 
       if (!mounted) return;
@@ -115,13 +118,15 @@ class _NotificationPageState extends State<NotificationPage> {
             ? const Color.fromRGBO(67, 20, 7, 0.5)
             : const Color(0xFFFFF7ED);
       case "IN PROGRESS":
-        return isDark ? const Color.fromRGBO(67, 20, 7, 0.5) : const Color(0xFFFFF0E6);
+        return isDark
+            ? const Color.fromRGBO(67, 20, 7, 0.5)
+            : const Color(0xFFFFF0E6);
       case "RESOLVED":
         return isDark
             ? const Color.fromRGBO(20, 83, 45, 0.4)
             : const Color(0xFFF0FDF4);
       default:
-        return isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9);
+        return isDark ? const Color(0xFF2E2A52) : const Color(0xFFF0F1F6);
     }
   }
 
@@ -137,21 +142,38 @@ class _NotificationPageState extends State<NotificationPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
-    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final textPrimary = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-    final navBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    // ── STYLE GUIDE PALETTE (disamakan dengan AdminNotificationPage) ──
+    const primary = Color(0xFF6C63FF);
+
+    final bgColor = isDark ? const Color(0xFF14142B) : const Color(0xFFEDEFF7);
+    final cardColor = isDark ? const Color(0xFF1F1B3A) : Colors.white;
+    final textPrimary = isDark
+        ? const Color(0xFFF1F1FB)
+        : const Color(0xFF14142B);
+    final textSecondary = isDark
+        ? const Color(0xFFA0A0B8)
+        : const Color(0xFF92929D);
+    final borderColor = isDark
+        ? const Color(0xFF2E2A52)
+        : const Color(0xFFF0F1F6);
+    final navBg = isDark ? const Color(0xFF1F1B3A) : Colors.white;
+    final shadowColor = isDark
+        ? Colors.black.withOpacity(0.25)
+        : const Color(0xFF6C63FF).withOpacity(0.06);
 
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? Center(child: CircularProgressIndicator(color: primary))
             : RefreshIndicator(
                 onRefresh: _loadNotifications,
+                color: primary,
                 child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
                   children: [
                     // HEADER
                     Row(
@@ -163,8 +185,8 @@ class _NotificationPageState extends State<NotificationPage> {
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1E293B),
-                                borderRadius: BorderRadius.circular(10),
+                                color: const Color(0xFF14142B),
+                                borderRadius: BorderRadius.circular(14),
                               ),
                               child: const Icon(
                                 Icons.confirmation_num,
@@ -172,11 +194,11 @@ class _NotificationPageState extends State<NotificationPage> {
                                 size: 20,
                               ),
                             ),
-                            const SizedBox(width: 10),
-                            const Text(
+                            const SizedBox(width: 12),
+                            Text(
                               "Concierge",
-                              style: TextStyle(
-                                color: Color(0xFF2563EB),
+                              style: GoogleFonts.plusJakartaSans(
+                                color: primary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
                                 letterSpacing: -0.3,
@@ -191,14 +213,23 @@ class _NotificationPageState extends State<NotificationPage> {
                               height: 38,
                               decoration: BoxDecoration(
                                 color: cardColor,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: borderColor),
+                                borderRadius: BorderRadius.circular(12),
+                                border: isDark
+                                    ? Border.all(color: borderColor)
+                                    : null,
+                                boxShadow: isDark
+                                    ? []
+                                    : [
+                                        BoxShadow(
+                                          color: shadowColor,
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
                               ),
                               child: Icon(
                                 Icons.notifications_outlined,
-                                color: isDark
-                                    ? const Color(0xFF94A3B8)
-                                    : const Color(0xFF475569),
+                                color: textSecondary,
                                 size: 20,
                               ),
                             ),
@@ -224,18 +255,18 @@ class _NotificationPageState extends State<NotificationPage> {
 
                     Text(
                       "Notifications",
-                      style: TextStyle(
-                        fontSize: 26,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: textPrimary,
                         letterSpacing: -0.5,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       "Track latest updates from the helpdesk team.",
-                      style: TextStyle(
-                        color: Color(0xFF94A3B8),
+                      style: GoogleFonts.plusJakartaSans(
+                        color: textSecondary,
                         fontSize: 14,
                         height: 1.4,
                       ),
@@ -243,13 +274,17 @@ class _NotificationPageState extends State<NotificationPage> {
 
                     const SizedBox(height: 24),
 
-                    _sectionTitle("SUPABASE UPDATES"),
+                    _sectionTitle("SUPABASE UPDATES", textSecondary),
                     const SizedBox(height: 10),
 
                     if (_notifications.isEmpty)
                       _emptyState(
                         cardColor: cardColor,
                         textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                        borderColor: borderColor,
+                        shadowColor: shadowColor,
+                        isDark: isDark,
                       ),
 
                     ..._notifications.map((notif) {
@@ -257,7 +292,6 @@ class _NotificationPageState extends State<NotificationPage> {
                       final type = (notif["type"] ?? "info").toString();
 
                       return _notifCard(
-                        cardColor: cardColor,
                         iconWidget: _iconBox(
                           icon: _notifIcon(type, status),
                           iconColor: _statusColor(status),
@@ -268,13 +302,18 @@ class _NotificationPageState extends State<NotificationPage> {
                         status: status,
                         statusColor: _statusColor(status),
                         statusBg: _statusBg(status, isDark),
+                        cardColor: cardColor,
                         textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                        borderColor: borderColor,
+                        shadowColor: shadowColor,
+                        isDark: isDark,
                       );
                     }),
 
                     const SizedBox(height: 24),
 
-                    _sectionTitle("FEATURED ALERT"),
+                    _sectionTitle("FEATURED ALERT", textSecondary),
                     const SizedBox(height: 10),
 
                     Container(
@@ -282,11 +321,11 @@ class _NotificationPageState extends State<NotificationPage> {
                       padding: const EdgeInsets.all(22),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                          colors: [Color(0xFF6C63FF), Color(0xFF4B3FE0)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
-                        borderRadius: BorderRadius.circular(22),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -294,15 +333,24 @@ class _NotificationPageState extends State<NotificationPage> {
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
+                              children: [
                                 Row(
                                   children: [
-                                    Icon(Icons.bolt, color: Colors.white70, size: 14),
-                                    SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.bolt,
+                                      color: Colors.white70,
+                                      size: 14,
+                                    ),
+                                    const SizedBox(width: 4),
                                     Text(
                                       "URGENT UPDATE",
-                                      style: TextStyle(
-                                        color: Color.fromRGBO(255, 255, 255, 0.7),
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: const Color.fromRGBO(
+                                          255,
+                                          255,
+                                          255,
+                                          0.7,
+                                        ),
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
                                         letterSpacing: 0.8,
@@ -310,10 +358,10 @@ class _NotificationPageState extends State<NotificationPage> {
                                     ),
                                   ],
                                 ),
-                                SizedBox(height: 10),
+                                const SizedBox(height: 10),
                                 Text(
                                   "Server Maintenance\nScheduled",
-                                  style: TextStyle(
+                                  style: GoogleFonts.plusJakartaSans(
                                     color: Colors.white,
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
@@ -321,11 +369,16 @@ class _NotificationPageState extends State<NotificationPage> {
                                     letterSpacing: -0.3,
                                   ),
                                 ),
-                                SizedBox(height: 8),
+                                const SizedBox(height: 8),
                                 Text(
                                   "Tomorrow, 02:00 AM UTC",
-                                  style: TextStyle(
-                                    color: Color.fromRGBO(255, 255, 255, 0.7),
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: const Color.fromRGBO(
+                                      255,
+                                      255,
+                                      255,
+                                      0.7,
+                                    ),
                                     fontSize: 13,
                                   ),
                                 ),
@@ -357,11 +410,17 @@ class _NotificationPageState extends State<NotificationPage> {
                           child: _statCard(
                             cardColor: cardColor,
                             textPrimary: textPrimary,
+                            textSecondary: textSecondary,
+                            borderColor: borderColor,
+                            shadowColor: shadowColor,
+                            isDark: isDark,
                             value: _activeNotifCount.toString(),
                             label: "ACTIVE UPDATES",
                             icon: Icons.article_outlined,
-                            iconColor: const Color(0xFF2563EB),
-                            iconBg: isDark ? const Color(0xFF1D3461) : const Color(0xFFEFF6FF),
+                            iconColor: primary,
+                            iconBg: isDark
+                                ? const Color(0xFF2A2456)
+                                : const Color(0xFFEDEBFF),
                           ),
                         ),
                         const SizedBox(width: 14),
@@ -369,13 +428,17 @@ class _NotificationPageState extends State<NotificationPage> {
                           child: _statCard(
                             cardColor: cardColor,
                             textPrimary: textPrimary,
+                            textSecondary: textSecondary,
+                            borderColor: borderColor,
+                            shadowColor: shadowColor,
+                            isDark: isDark,
                             value: _unreadCount.toString(),
                             label: "UNREAD",
                             icon: Icons.notifications_active_outlined,
-                            iconColor: const Color(0xFFBC4800),
+                            iconColor: const Color(0xFFFF9F43),
                             iconBg: isDark
-                                ? const Color.fromRGBO(67, 20, 7, 0.5)
-                                : const Color(0xFFFFF0E6),
+                                ? const Color(0xFF3A2C16)
+                                : const Color(0xFFFFF1E0),
                           ),
                         ),
                       ],
@@ -387,83 +450,92 @@ class _NotificationPageState extends State<NotificationPage> {
               ),
       ),
 
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 2,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF2563EB),
-        unselectedItemColor: const Color(0xFF94A3B8),
-        selectedLabelStyle: const TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
+      bottomNavigationBar: Container(
+        margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        decoration: BoxDecoration(
+          color: navBg,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 10,
-          letterSpacing: 0.5,
-        ),
-        backgroundColor: navBg,
-        elevation: 8,
-        onTap: (index) {
-          if (index == 2) return;
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BottomNavigationBar(
+            currentIndex: 2,
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: navBg,
+            elevation: 0,
+            selectedItemColor: primary,
+            unselectedItemColor: textSecondary,
+            showSelectedLabels: false,
+            showUnselectedLabels: false,
+            onTap: (index) {
+              if (index == 2) return;
 
-          if (index == 0) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => DashboardPage(
-                  role: "user",
-                  toggleTheme: widget.toggleTheme,
-                ),
+              if (index == 0) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => DashboardPage(
+                      role: "user",
+                      toggleTheme: widget.toggleTheme,
+                    ),
+                  ),
+                );
+              } else if (index == 1) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        TicketListPage(toggleTheme: widget.toggleTheme),
+                  ),
+                );
+              } else if (index == 3) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProfilePage(
+                      toggleTheme: widget.toggleTheme ?? (value) {},
+                    ),
+                  ),
+                );
+              }
+            },
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.grid_view_rounded),
+                label: "HOME",
               ),
-            );
-          } else if (index == 1) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => TicketListPage(
-                  toggleTheme: widget.toggleTheme,
-                ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.confirmation_num_outlined),
+                label: "TICKETS",
               ),
-            );
-          } else if (index == 3) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ProfilePage(
-                  toggleTheme: widget.toggleTheme ?? (value) {},
-                ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.notifications),
+                label: "NOTIFICATIONS",
               ),
-            );
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.grid_view_rounded),
-            label: "HOME",
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                label: "PROFILE",
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.confirmation_num_outlined),
-            label: "TICKETS",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: "NOTIFICATIONS",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: "PROFILE",
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _sectionTitle(String text) {
+  Widget _sectionTitle(String text, Color textSecondary) {
     return Text(
       text,
-      style: const TextStyle(
+      style: GoogleFonts.plusJakartaSans(
         fontWeight: FontWeight.w700,
-        color: Color(0xFF94A3B8),
+        color: textSecondary,
         fontSize: 11,
         letterSpacing: 1.2,
       ),
@@ -473,6 +545,10 @@ class _NotificationPageState extends State<NotificationPage> {
   Widget _emptyState({
     required Color cardColor,
     required Color textPrimary,
+    required Color textSecondary,
+    required Color borderColor,
+    required Color shadowColor,
+    required bool isDark,
   }) {
     return Container(
       width: double.infinity,
@@ -480,29 +556,39 @@ class _NotificationPageState extends State<NotificationPage> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
+        border: isDark ? Border.all(color: borderColor) : null,
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: shadowColor,
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Column(
         children: [
-          const Icon(
+          Icon(
             Icons.notifications_none,
-            color: Color(0xFF94A3B8),
+            color: textSecondary.withOpacity(0.6),
             size: 36,
           ),
           const SizedBox(height: 10),
           Text(
             "No notifications found",
-            style: TextStyle(
+            style: GoogleFonts.plusJakartaSans(
               color: textPrimary,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             "Updates from helpdesk will appear here.",
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF94A3B8),
+            style: GoogleFonts.plusJakartaSans(
+              color: textSecondary,
               fontSize: 13,
             ),
           ),
@@ -520,33 +606,40 @@ class _NotificationPageState extends State<NotificationPage> {
     required Color statusBg,
     required Color cardColor,
     required Color textPrimary,
+    required Color textSecondary,
+    required Color borderColor,
+    required Color shadowColor,
+    required bool isDark,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(
-            color: Color.fromRGBO(0, 0, 0, 0.04),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(20),
+        border: isDark ? Border.all(color: borderColor) : null,
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: shadowColor,
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           iconWidget,
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: TextStyle(
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
                     color: textPrimary,
                     fontWeight: FontWeight.w500,
@@ -556,7 +649,10 @@ class _NotificationPageState extends State<NotificationPage> {
                 const SizedBox(height: 5),
                 Text(
                   time,
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    color: textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -570,7 +666,7 @@ class _NotificationPageState extends State<NotificationPage> {
             ),
             child: Text(
               status,
-              style: TextStyle(
+              style: GoogleFonts.plusJakartaSans(
                 color: statusColor,
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
@@ -589,13 +685,13 @@ class _NotificationPageState extends State<NotificationPage> {
     required Color bgColor,
   }) {
     return Container(
-      width: 44,
-      height: 44,
+      width: 48,
+      height: 48,
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
       ),
-      child: Icon(icon, color: iconColor, size: 20),
+      child: Icon(icon, color: iconColor, size: 22),
     );
   }
 
@@ -607,19 +703,26 @@ class _NotificationPageState extends State<NotificationPage> {
     required Color iconBg,
     required Color cardColor,
     required Color textPrimary,
+    required Color textSecondary,
+    required Color borderColor,
+    required Color shadowColor,
+    required bool isDark,
   }) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(
-            color: Color.fromRGBO(0, 0, 0, 0.04),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(20),
+        border: isDark ? Border.all(color: borderColor) : null,
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: shadowColor,
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -636,7 +739,7 @@ class _NotificationPageState extends State<NotificationPage> {
           const SizedBox(height: 12),
           Text(
             value,
-            style: TextStyle(
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 26,
               fontWeight: FontWeight.bold,
               color: textPrimary,
@@ -646,9 +749,9 @@ class _NotificationPageState extends State<NotificationPage> {
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 11,
-              color: Color(0xFF94A3B8),
+              color: textSecondary,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.5,
             ),

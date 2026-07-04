@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../profile/profile_page.dart';
 import '../ticket/ticket_list_page.dart';
 import '../notification/notification_page.dart';
@@ -13,14 +14,26 @@ class DashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // 🎨 Color tokens
-    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
-    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final textPrimary = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
-    final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF94A3B8);
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-    final navBg = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final iconBoxBg = isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9);
+    // 🎨 Color tokens (Style Guide Concierge)
+    const primary = Color(0xFF6C63FF);
+    final bgColor = isDark ? const Color(0xFF14142B) : const Color(0xFFEDEFF7);
+    final cardColor = isDark ? const Color(0xFF1F1B3A) : Colors.white;
+    final textPrimary = isDark
+        ? const Color(0xFFF1F1FB)
+        : const Color(0xFF14142B);
+    final textSecondary = isDark
+        ? const Color(0xFFA0A0B8)
+        : const Color(0xFF92929D);
+    final borderColor = isDark
+        ? const Color(0xFF2E2A52)
+        : const Color(0xFFF0F1F6);
+    final navBg = isDark ? const Color(0xFF1F1B3A) : Colors.white;
+    final iconBoxBg = isDark
+        ? const Color(0xFF2E2A52)
+        : const Color(0xFFF0F1F6);
+    final shadowColor = isDark
+        ? Colors.black.withOpacity(0.25)
+        : const Color(0xFF6C63FF).withOpacity(0.06);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -31,7 +44,6 @@ class DashboardPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               // 🔝 HEADER
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -42,8 +54,8 @@ class DashboardPage extends StatelessWidget {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E293B),
-                          borderRadius: BorderRadius.circular(10),
+                          color: const Color(0xFF14142B),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                         child: const Icon(
                           Icons.confirmation_num,
@@ -52,10 +64,10 @@ class DashboardPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      const Text(
+                      Text(
                         "Concierge",
-                        style: TextStyle(
-                          color: Color(0xFF2563EB),
+                        style: GoogleFonts.plusJakartaSans(
+                          color: primary,
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
                           letterSpacing: -0.3,
@@ -70,7 +82,8 @@ class DashboardPage extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => NotificationPage(toggleTheme: toggleTheme),
+                          builder: (_) =>
+                              NotificationPage(toggleTheme: toggleTheme),
                         ),
                       );
                     },
@@ -80,11 +93,20 @@ class DashboardPage extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: cardColor,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: borderColor),
+                        boxShadow: isDark
+                            ? []
+                            : [
+                                BoxShadow(
+                                  color: shadowColor,
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                        border: isDark ? Border.all(color: borderColor) : null,
                       ),
                       child: Icon(
                         Icons.notifications_outlined,
-                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                        color: textSecondary,
                         size: 20,
                       ),
                     ),
@@ -97,7 +119,7 @@ class DashboardPage extends StatelessWidget {
               // 👋 GREETING
               Text(
                 "Good morning, Alex",
-                style: TextStyle(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: textPrimary,
@@ -107,7 +129,10 @@ class DashboardPage extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 "How can we help you today?",
-                style: TextStyle(color: textSecondary, fontSize: 14),
+                style: GoogleFonts.plusJakartaSans(
+                  color: textSecondary,
+                  fontSize: 14,
+                ),
               ),
 
               const SizedBox(height: 24),
@@ -119,10 +144,14 @@ class DashboardPage extends StatelessWidget {
                 value: "42",
                 isHighlighted: false,
                 icon: Icons.article_outlined,
-                iconColor: const Color(0xFF2563EB),
-                iconBg: isDark ? const Color(0xFF1D3461) : const Color(0xFFEFF6FF),
+                iconColor: primary,
+                iconBg: isDark
+                    ? const Color(0xFF2A2456)
+                    : const Color(0xFFEDEBFF),
                 cardColor: cardColor,
                 textPrimary: textPrimary,
+                textSecondary: textSecondary,
+                shadowColor: shadowColor,
               ),
               const SizedBox(height: 14),
               _buildStatCard(
@@ -135,6 +164,8 @@ class DashboardPage extends StatelessWidget {
                 iconBg: Colors.white.withOpacity(0.2),
                 cardColor: cardColor,
                 textPrimary: textPrimary,
+                textSecondary: textSecondary,
+                shadowColor: shadowColor,
               ),
               const SizedBox(height: 14),
               _buildStatCard(
@@ -143,28 +174,30 @@ class DashboardPage extends StatelessWidget {
                 value: "30",
                 isHighlighted: false,
                 icon: Icons.check_circle_outline,
-                iconColor: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                iconColor: textSecondary,
                 iconBg: iconBoxBg,
                 cardColor: cardColor,
                 textPrimary: textPrimary,
+                textSecondary: textSecondary,
+                shadowColor: shadowColor,
               ),
 
               const SizedBox(height: 24),
 
-              // 🔥 CTA CARD — selalu dark, tidak perlu berubah
+              // 🔥 CTA CARD — selalu dark navy, tidak berubah antar tema
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B),
+                  color: const Color(0xFF14142B),
                   borderRadius: BorderRadius.circular(22),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       "Need immediate\nassistance?",
-                      style: TextStyle(
+                      style: GoogleFonts.plusJakartaSans(
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -173,10 +206,10 @@ class DashboardPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    const Text(
+                    Text(
                       "Our digital concierges are ready to assist with any technical issues or service requests.",
-                      style: TextStyle(
-                        color: Color(0xFF94A3B8),
+                      style: GoogleFonts.plusJakartaSans(
+                        color: const Color(0xFFA0A0B8),
                         fontSize: 13,
                         height: 1.5,
                       ),
@@ -187,7 +220,7 @@ class DashboardPage extends StatelessWidget {
                       height: 48,
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2563EB),
+                          backgroundColor: primary,
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -198,14 +231,15 @@ class DashboardPage extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => TicketListPage(toggleTheme: toggleTheme),
+                              builder: (_) =>
+                                  TicketListPage(toggleTheme: toggleTheme),
                             ),
                           );
                         },
                         icon: const Icon(Icons.add_circle_outline, size: 18),
-                        label: const Text(
+                        label: Text(
                           "Create New Ticket",
-                          style: TextStyle(
+                          style: GoogleFonts.plusJakartaSans(
                             fontWeight: FontWeight.w600,
                             fontSize: 15,
                           ),
@@ -224,17 +258,17 @@ class DashboardPage extends StatelessWidget {
                 children: [
                   Text(
                     "Recent Activity",
-                    style: TextStyle(
+                    style: GoogleFonts.plusJakartaSans(
                       fontWeight: FontWeight.bold,
                       fontSize: 17,
                       color: textPrimary,
                       letterSpacing: -0.3,
                     ),
                   ),
-                  const Text(
+                  Text(
                     "View All",
-                    style: TextStyle(
-                      color: Color(0xFF2563EB),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: primary,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -247,42 +281,48 @@ class DashboardPage extends StatelessWidget {
               _buildTicketItem(
                 cardColor: cardColor,
                 textPrimary: textPrimary,
+                textSecondary: textSecondary,
+                shadowColor: shadowColor,
                 title: "Cloud Server Connectivity Issue",
                 description: "The primary production server",
                 ticketId: "#TK-8842",
                 timeAgo: "2H AGO",
                 status: "CRITICAL",
-                statusColor: const Color(0xFFEF4444),
-                statusBg: const Color(0xFFFEE2E2),
-                iconBg: const Color(0xFFFEE2E2),
-                iconColor: const Color(0xFFEF4444),
+                statusColor: const Color(0xFFF45B69),
+                statusBg: const Color(0xFFFDE8EA),
+                iconBg: const Color(0xFFFDE8EA),
+                iconColor: const Color(0xFFF45B69),
                 icon: Icons.priority_high,
               ),
               _buildTicketItem(
                 cardColor: cardColor,
                 textPrimary: textPrimary,
+                textSecondary: textSecondary,
+                shadowColor: shadowColor,
                 title: "Software License Renewal",
                 description: "Requesting extension for the...",
                 ticketId: "#TK-8839",
                 timeAgo: "YESTERDAY",
                 status: "PENDING",
-                statusColor: const Color(0xFFF97316),
-                statusBg: const Color(0xFFFFF7ED),
-                iconBg: const Color(0xFFBC4800).withOpacity(0.15),
-                iconColor: const Color(0xFFBC4800),
+                statusColor: const Color(0xFFFF9F43),
+                statusBg: const Color(0xFFFFF1E0),
+                iconBg: const Color(0xFFFFF1E0),
+                iconColor: const Color(0xFFFF9F43),
                 icon: Icons.hourglass_empty,
               ),
               _buildTicketItem(
                 cardColor: cardColor,
                 textPrimary: textPrimary,
+                textSecondary: textSecondary,
+                shadowColor: shadowColor,
                 title: "Email Configuration Setup",
                 description: "Setup completed for the new...",
                 ticketId: "#TK-8830",
                 timeAgo: "3 DAYS AGO",
                 status: "RESOLVED",
-                statusColor: const Color(0xFF2563EB),
-                statusBg: const Color(0xFFEFF6FF),
-                iconBg: const Color(0xFF2563EB),
+                statusColor: const Color(0xFF21D07B),
+                statusBg: const Color(0xFFE1F9EE),
+                iconBg: primary,
                 iconColor: Colors.white,
                 icon: Icons.check,
               ),
@@ -294,67 +334,76 @@ class DashboardPage extends StatelessWidget {
       ),
 
       // 🔻 BOTTOM NAV
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF2563EB),
-        unselectedItemColor: const Color(0xFF94A3B8),
-        selectedLabelStyle: const TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
+      bottomNavigationBar: Container(
+        margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        decoration: BoxDecoration(
+          color: navBg,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 10,
-          letterSpacing: 0.5,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BottomNavigationBar(
+            currentIndex: 0,
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: navBg,
+            elevation: 0,
+            selectedItemColor: primary,
+            unselectedItemColor: textSecondary,
+            showSelectedLabels: false,
+            showUnselectedLabels: false,
+            onTap: (index) {
+              if (index == 0) return;
+              if (index == 1) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => TicketListPage(toggleTheme: toggleTheme),
+                  ),
+                );
+              } else if (index == 2) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => NotificationPage(toggleTheme: toggleTheme),
+                  ),
+                );
+              } else if (index == 3) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        ProfilePage(toggleTheme: toggleTheme ?? (value) {}),
+                  ),
+                );
+              }
+            },
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.grid_view_rounded),
+                label: "HOME",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.confirmation_num_outlined),
+                label: "TICKETS",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.notifications_none),
+                label: "NOTIFICATIONS",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                label: "PROFILE",
+              ),
+            ],
+          ),
         ),
-        backgroundColor: navBg,
-        elevation: 8,
-        onTap: (index) {
-          if (index == 0) return;
-          if (index == 1) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => TicketListPage(toggleTheme: toggleTheme),
-              ),
-            );
-          } else if (index == 2) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => NotificationPage(toggleTheme: toggleTheme),
-              ),
-            );
-          } else if (index == 3) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ProfilePage(
-                  toggleTheme: toggleTheme ?? (value) {},
-                ),
-              ),
-            );
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.grid_view_rounded),
-            label: "HOME",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.confirmation_num_outlined),
-            label: "TICKETS",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_none),
-            label: "NOTIFICATIONS",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: "PROFILE",
-          ),
-        ],
       ),
     );
   }
@@ -370,11 +419,14 @@ class DashboardPage extends StatelessWidget {
     required Color iconBg,
     required Color cardColor,
     required Color textPrimary,
+    required Color textSecondary,
+    required Color shadowColor,
   }) {
-    final bg = isHighlighted ? const Color(0xFF2563EB) : cardColor;
+    const primary = Color(0xFF6C63FF);
+    final bg = isHighlighted ? primary : cardColor;
     final titleColor = isHighlighted
         ? Colors.white.withOpacity(0.8)
-        : const Color(0xFF94A3B8);
+        : textSecondary;
     final valueColor = isHighlighted ? Colors.white : textPrimary;
 
     return Container(
@@ -385,9 +437,7 @@ class DashboardPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: isHighlighted
-                ? const Color(0xFF2563EB).withOpacity(0.25)
-                : Colors.black.withOpacity(0.04),
+            color: isHighlighted ? primary.withOpacity(0.25) : shadowColor,
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -401,7 +451,7 @@ class DashboardPage extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: TextStyle(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: titleColor,
@@ -422,7 +472,7 @@ class DashboardPage extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             value,
-            style: TextStyle(
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 32,
               fontWeight: FontWeight.bold,
               color: valueColor,
@@ -448,6 +498,8 @@ class DashboardPage extends StatelessWidget {
     required IconData icon,
     required Color cardColor,
     required Color textPrimary,
+    required Color textSecondary,
+    required Color shadowColor,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -457,7 +509,7 @@ class DashboardPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: shadowColor,
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -486,7 +538,7 @@ class DashboardPage extends StatelessWidget {
                     Expanded(
                       child: Text(
                         title,
-                        style: TextStyle(
+                        style: GoogleFonts.plusJakartaSans(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                           color: textPrimary,
@@ -497,14 +549,16 @@ class DashboardPage extends StatelessWidget {
                     const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: statusBg,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         status,
-                        style: TextStyle(
+                        style: GoogleFonts.plusJakartaSans(
                           color: statusColor,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -517,8 +571,8 @@ class DashboardPage extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: const TextStyle(
-                    color: Color(0xFF94A3B8),
+                  style: GoogleFonts.plusJakartaSans(
+                    color: textSecondary,
                     fontSize: 12,
                   ),
                 ),
@@ -527,20 +581,23 @@ class DashboardPage extends StatelessWidget {
                   children: [
                     Text(
                       ticketId,
-                      style: const TextStyle(
-                        color: Color(0xFF94A3B8),
+                      style: GoogleFonts.plusJakartaSans(
+                        color: textSecondary,
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const Text(
+                    Text(
                       " • ",
-                      style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                      style: GoogleFonts.plusJakartaSans(
+                        color: textSecondary,
+                        fontSize: 11,
+                      ),
                     ),
                     Text(
                       timeAgo,
-                      style: const TextStyle(
-                        color: Color(0xFF94A3B8),
+                      style: GoogleFonts.plusJakartaSans(
+                        color: textSecondary,
                         fontSize: 11,
                       ),
                     ),

@@ -1,4 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/ticket_service.dart';
 
 class CreateTicketPage extends StatefulWidget {
@@ -16,17 +20,12 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
 
   final TicketService _ticketService = TicketService();
 
-  String selectedCategory = "Technical Support";
   String selectedPriority = "Med";
   bool isSubmitting = false;
 
-  final List<String> categories = [
-    "Technical Support",
-    "Network",
-    "Hardware",
-    "Software",
-    "Other",
-  ];
+  File? _selectedFile;
+  String? _fileName;
+  bool _isImage = false;
 
   @override
   void dispose() {
@@ -35,19 +34,78 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70,
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          _selectedFile = File(pickedFile.path);
+          _fileName = pickedFile.name;
+          _isImage = true;
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Failed to pick image: $e")));
+    }
+  }
+
+  Future<void> _pickDocument() async {
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx', 'txt'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        setState(() {
+          _selectedFile = File(result.files.single.path!);
+          _fileName = result.files.single.name;
+          _isImage = false;
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Failed to pick document: $e")));
+    }
+  }
+
   Future<void> _submitTicket() async {
     if (isSubmitting) return;
-
     setState(() => isSubmitting = true);
 
     try {
+      String? attachmentUrl;
+
+      if (_selectedFile != null) {
+        final ext = _fileName?.split('.').last.toLowerCase() ?? 'bin';
+        final fileNameToUpload =
+            'ticket_${DateTime.now().millisecondsSinceEpoch}.$ext';
+
+        await Supabase.instance.client.storage
+            .from('attachments')
+            .upload(fileNameToUpload, _selectedFile!);
+
+        attachmentUrl = Supabase.instance.client.storage
+            .from('attachments')
+            .getPublicUrl(fileNameToUpload);
+      }
+
       final insertedTicket = await _ticketService.createTicket(
         title: titleController.text.trim().isEmpty
             ? "Untitled Ticket"
             : titleController.text.trim(),
-        category: selectedCategory,
+        category: "General",
         description: descController.text.trim(),
         requestedPriority: selectedPriority.toUpperCase(),
+        attachmentUrl: attachmentUrl,
       );
 
       if (context.mounted) {
@@ -63,9 +121,7 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
         );
       }
     } finally {
-      if (mounted) {
-        setState(() => isSubmitting = false);
-      }
+      if (mounted) setState(() => isSubmitting = false);
     }
   }
 
@@ -75,19 +131,20 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
 
     final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
     final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final textPrimary = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
+    final textPrimary = isDark
+        ? const Color(0xFFF1F5F9)
+        : const Color(0xFF0F172A);
     final textSecondary = isDark ? const Color(0xFF94A3B8) : Colors.grey[500]!;
     final fieldBg = isDark ? const Color(0xFF1E293B) : const Color(0xFFEEF2FF);
     final hintColor = isDark ? const Color(0xFF64748B) : Colors.grey[400]!;
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final borderColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
     final labelColor = const Color(0xFF94A3B8);
-    final dropdownBg = isDark ? const Color(0xFF1E293B) : Colors.white;
     final navBg = isDark ? const Color(0xFF1E293B) : Colors.white;
 
     return Scaffold(
       backgroundColor: bgColor,
-
-      // ─── SUBMIT BUTTON FIXED BOTTOM ─────────────────────────────
       bottomNavigationBar: SafeArea(
         child: Container(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
@@ -139,7 +196,7 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                "Max file size: 25MB. PDF, PNG, JPG supported.",
+                "Max file size: 5MB. Photo or Document.",
                 style: TextStyle(
                   color: hintColor,
                   fontSize: 12,
@@ -150,14 +207,12 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
           ),
         ),
       ),
-
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ─── HEADER ─────────────────────────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -188,28 +243,13 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                       ),
                     ],
                   ),
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: cardColor,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: borderColor),
-                    ),
-                    child: Icon(
-                      Icons.notifications_outlined,
-                      color: isDark
-                          ? const Color(0xFF94A3B8)
-                          : const Color(0xFF475569),
-                      size: 20,
-                    ),
+                  IconButton(
+                    icon: Icon(Icons.close, color: textPrimary),
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ],
               ),
-
               const SizedBox(height: 28),
-
-              // ─── PAGE TITLE ─────────────────────────────────────────
               Text(
                 "Create Ticket",
                 style: TextStyle(
@@ -228,10 +268,8 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                   height: 1.5,
                 ),
               ),
-
               const SizedBox(height: 28),
 
-              // ─── SUBJECT ─────────────────────────────────────────────
               _fieldLabel("SUBJECT"),
               const SizedBox(height: 8),
               _buildTextField(
@@ -244,50 +282,6 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
               ),
 
               const SizedBox(height: 20),
-
-              // ─── CATEGORY ────────────────────────────────────────────
-              _fieldLabel("CATEGORY"),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: fieldBg,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: selectedCategory,
-                    isExpanded: true,
-                    icon: Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: isDark
-                          ? const Color(0xFF94A3B8)
-                          : const Color(0xFF475569),
-                    ),
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    dropdownColor: dropdownBg,
-                    borderRadius: BorderRadius.circular(14),
-                    items: categories.map((category) {
-                      return DropdownMenuItem(
-                        value: category,
-                        child: Text(category),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setState(() => selectedCategory = value);
-                    },
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // ─── PRIORITY ────────────────────────────────────────────
               _fieldLabel("PRIORITY"),
               const SizedBox(height: 8),
               Container(
@@ -299,47 +293,32 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                 child: Row(
                   children: ["Low", "Med", "High"].map((priority) {
                     final isSelected = selectedPriority == priority;
-
-                    Color selectedTextColor;
-                    switch (priority) {
-                      case "High":
-                        selectedTextColor = const Color(0xFFEF4444);
-                        break;
-                      case "Med":
-                        selectedTextColor = const Color(0xFFF97316);
-                        break;
-                      default:
-                        selectedTextColor = const Color(0xFF16A34A);
-                    }
-
+                    Color selectedTextColor = priority == "High"
+                        ? const Color(0xFFEF4444)
+                        : (priority == "Med"
+                              ? const Color(0xFFF97316)
+                              : const Color(0xFF16A34A));
                     return Expanded(
                       child: GestureDetector(
-                        onTap: () {
-                          setState(() => selectedPriority = priority);
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
+                        onTap: () =>
+                            setState(() => selectedPriority = priority),
+                        child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 11),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? (isDark ? const Color(0xFF334155) : Colors.white)
+                                ? (isDark
+                                      ? const Color(0xFF334155)
+                                      : Colors.white)
                                 : Colors.transparent,
                             borderRadius: BorderRadius.circular(10),
-                            boxShadow: isSelected && !isDark
-                                ? [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.06),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ]
-                                : [],
                           ),
                           child: Center(
                             child: Text(
                               priority,
                               style: TextStyle(
-                                color: isSelected ? selectedTextColor : labelColor,
+                                color: isSelected
+                                    ? selectedTextColor
+                                    : labelColor,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
@@ -353,8 +332,6 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
               ),
 
               const SizedBox(height: 20),
-
-              // ─── DESCRIPTION ────────────────────────────────────────
               _fieldLabel("DESCRIPTION"),
               const SizedBox(height: 8),
               _buildTextField(
@@ -368,90 +345,137 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
 
               const SizedBox(height: 28),
 
-              // ─── ATTACHMENT ─────────────────────────────────────────
-              _fieldLabel("ATTACHMENT"),
+              _fieldLabel("ATTACHMENT (OPTIONAL)"),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        // TODO: implement pick from gallery
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 22),
-                        decoration: BoxDecoration(
-                          color: fieldBg,
-                          borderRadius: BorderRadius.circular(14),
-                          border: isDark
-                              ? Border.all(color: const Color(0xFF334155))
-                              : null,
-                        ),
-                        child: const Column(
-                          mainAxisSize: MainAxisSize.min,
+
+              if (_selectedFile != null)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: fieldBg,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFF2563EB)),
+                  ),
+                  child: Column(
+                    children: [
+                      if (_isImage)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            _selectedFile!,
+                            height: 160,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      else
+                        Column(
                           children: [
-                            Icon(
-                              Icons.folder_open_outlined,
+                            const Icon(
+                              Icons.insert_drive_file,
+                              size: 48,
                               color: Color(0xFF2563EB),
-                              size: 28,
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 12),
                             Text(
-                              "Upload from\nGallery",
-                              textAlign: TextAlign.center,
+                              _fileName ?? "Document Selected",
                               style: TextStyle(
-                                color: Color(0xFF2563EB),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                                height: 1.4,
+                                color: textPrimary,
+                                fontWeight: FontWeight.bold,
                               ),
+                              textAlign: TextAlign.center,
                             ),
                           ],
                         ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        // TODO: implement camera capture
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 22),
-                        decoration: BoxDecoration(
-                          color: fieldBg,
-                          borderRadius: BorderRadius.circular(14),
-                          border: isDark
-                              ? Border.all(color: const Color(0xFF334155))
-                              : null,
+                      const SizedBox(height: 12),
+                      TextButton.icon(
+                        onPressed: () => setState(() {
+                          _selectedFile = null;
+                          _fileName = null;
+                          _isImage = false;
+                        }),
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          color: Colors.red,
+                          size: 18,
                         ),
-                        child: const Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.camera_alt_outlined,
-                              color: Color(0xFF2563EB),
-                              size: 28,
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              "Take Photo",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Color(0xFF2563EB),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                                height: 1.4,
+                        label: const Text(
+                          "Remove Attachment",
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          decoration: BoxDecoration(
+                            color: fieldBg,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: borderColor),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.add_photo_alternate_outlined,
+                                size: 32,
+                                color: hintColor,
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 8),
+                              Text(
+                                "Upload Photo",
+                                style: TextStyle(
+                                  color: textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: _pickDocument,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          decoration: BoxDecoration(
+                            color: fieldBg,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: borderColor),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.upload_file_outlined,
+                                size: 32,
+                                color: hintColor,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                "Upload File",
+                                style: TextStyle(
+                                  color: textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
 
               const SizedBox(height: 20),
             ],
@@ -461,17 +485,15 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
     );
   }
 
-  Widget _fieldLabel(String label) {
-    return Text(
-      label,
-      style: const TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        color: Color(0xFF94A3B8),
-        letterSpacing: 1.0,
-      ),
-    );
-  }
+  Widget _fieldLabel(String label) => Text(
+    label,
+    style: const TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w700,
+      color: Color(0xFF94A3B8),
+      letterSpacing: 1.0,
+    ),
+  );
 
   Widget _buildTextField({
     required TextEditingController controller,
@@ -484,33 +506,15 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
     return TextField(
       controller: controller,
       maxLines: maxLines,
-      style: TextStyle(
-        fontSize: 15,
-        color: textPrimary,
-      ),
+      style: TextStyle(fontSize: 15, color: textPrimary),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(color: hintColor, fontSize: 14),
         filled: true,
         fillColor: fieldBg,
-        contentPadding: const EdgeInsets.symmetric(
-          vertical: 16,
-          horizontal: 16,
-        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(
-            color: Color(0xFF2563EB),
-            width: 1.5,
-          ),
         ),
       ),
     );

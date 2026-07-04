@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../services/ticket_service.dart';
 
 class TicketDetailPage extends StatefulWidget {
   final Map ticket;
   final Function(bool)? toggleTheme;
 
-  const TicketDetailPage({
-    super.key,
-    required this.ticket,
-    this.toggleTheme,
-  });
+  const TicketDetailPage({super.key, required this.ticket, this.toggleTheme});
 
   @override
   State<TicketDetailPage> createState() => _TicketDetailPageState();
@@ -53,9 +50,9 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => isLoadingComments = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to load comments: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Failed to load comments: $e")));
     }
   }
 
@@ -78,9 +75,9 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
       await _loadComments();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to send comment: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Failed to send comment: $e")));
     } finally {
       if (mounted) setState(() => isSending = false);
     }
@@ -100,7 +97,6 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
     }
   }
 
-  // 🗂️ Bangun timeline dari data tiket asli, bukan hardcoded
   List<Map<String, String>> _buildTimelineSteps() {
     final status = (widget.ticket["status"] ?? "OPEN").toString().toUpperCase();
     final assignedTo = widget.ticket["assignedTo"];
@@ -114,12 +110,7 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
       isResolved,
     ];
 
-    final labels = [
-      "Ticket Created",
-      "Assigned to Helpdesk",
-      "In Progress",
-      "Resolved",
-    ];
+    final labels = ["Ticket Created", "Sent to Admin", "In Progress", "Closed"];
 
     int activeIndex = doneFlags.indexWhere((d) => !d);
     if (activeIndex == -1) activeIndex = labels.length;
@@ -132,59 +123,109 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
     });
   }
 
+  Color _priorityColor(String p) {
+    switch (p.toUpperCase()) {
+      case "URGENT":
+        return const Color(0xFFB91C3D);
+      case "HIGH":
+        return const Color(0xFFF45B69);
+      case "MED":
+      case "MEDIUM":
+        return const Color(0xFFFF9F43);
+      case "LOW":
+        return const Color(0xFF21D07B);
+      default:
+        return const Color(0xFF92929D);
+    }
+  }
+
+  Color _statusColor(String s, Color primary) {
+    switch (s.toUpperCase()) {
+      case "OPEN":
+        return const Color(0xFFF45B69);
+      case "IN PROGRESS":
+        return primary;
+      case "RESOLVED":
+      case "CLOSED":
+        return const Color(0xFF21D07B);
+      default:
+        return const Color(0xFF92929D);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor       = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
-    final cardColor     = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final textPrimary   = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
-    final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF334155);
-    final textMuted     = isDark ? const Color(0xFF64748B) : const Color(0xFF64748B);
-    final inputBg       = isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9);
-    final inputBarBg    = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final bubbleAdminBg = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-    final bubbleAdminText = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF1E293B);
-    final backIconColor = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF1E293B);
-    final idBadgeBg     = isDark ? const Color(0xFF1D3461) : const Color(0xFFE0E7FF);
-    final timelineBg    = cardColor;
-    final dividerColor  = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    // ── STYLE GUIDE PALETTE (disamakan dengan AdminTicketDetailPage) ──
+    const primary = Color(0xFF6C63FF);
+
+    final bgColor = isDark ? const Color(0xFF14142B) : const Color(0xFFEDEFF7);
+    final cardColor = isDark ? const Color(0xFF1F1B3A) : Colors.white;
+    final textPrimary = isDark
+        ? const Color(0xFFF1F1FB)
+        : const Color(0xFF14142B);
+    final textSecondary = isDark
+        ? const Color(0xFFA0A0B8)
+        : const Color(0xFF92929D);
+    final textMuted = textSecondary;
+    final borderColor = isDark
+        ? const Color(0xFF2E2A52)
+        : const Color(0xFFF0F1F6);
+    final fieldBg = isDark ? const Color(0xFF14142B) : const Color(0xFFF0F1F6);
+    final inputBarBg = cardColor;
+    final bubbleAdminBg = isDark
+        ? const Color(0xFF2E2A52)
+        : const Color(0xFFF0F1F6);
+    final bubbleAdminText = textPrimary;
+    final idBadgeBg = isDark
+        ? const Color(0xFF2A2456)
+        : const Color(0xFFEDEBFF);
+    final timelineBg = cardColor;
+    final dividerColor = borderColor;
+    final shadowColor = isDark
+        ? Colors.black.withOpacity(0.25)
+        : const Color(0xFF6C63FF).withOpacity(0.06);
 
     final status = (widget.ticket["status"] ?? "OPEN").toString();
-    final priority = (widget.ticket["priority"] ??
-            widget.ticket["requestedPriority"] ??
-            "MEDIUM")
-        .toString()
-        .toUpperCase();
+    final priority =
+        (widget.ticket["priority"] ??
+                widget.ticket["requestedPriority"] ??
+                "MEDIUM")
+            .toString()
+            .toUpperCase();
 
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [
-
             // 🔝 HEADER
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
               child: Row(
                 children: [
                   IconButton(
-                    icon: Icon(Icons.arrow_back, color: backIconColor),
+                    icon: Icon(
+                      Icons.arrow_back_ios_new,
+                      color: textPrimary,
+                      size: 20,
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       "Ticket Details",
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: GoogleFonts.plusJakartaSans(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: Color(0xFF2563EB),
+                        color: primary,
                       ),
                     ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.more_vert, color: backIconColor),
+                    icon: Icon(Icons.more_vert, color: textPrimary),
                     onPressed: () {},
                   ),
                 ],
@@ -196,29 +237,34 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 children: [
-
                   // ID + TIME
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: idBadgeBg,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           widget.ticket["id"] ?? "#TK-0000",
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF2563EB),
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: primary,
                           ),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Text(
                         "Opened ${_timeAgo(widget.ticket["createdAt"])}",
-                        style: TextStyle(fontSize: 12, color: textMuted),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: textMuted,
+                        ),
                       ),
                     ],
                   ),
@@ -228,10 +274,11 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                   // TITLE
                   Text(
                     widget.ticket["title"] ?? "Untitled Ticket",
-                    style: TextStyle(
+                    style: GoogleFonts.plusJakartaSans(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: textPrimary,
+                      height: 1.3,
                     ),
                   ),
 
@@ -239,22 +286,35 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
 
                   // 📄 DESCRIPTION CARD
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: cardColor,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(22),
+                      border: isDark ? Border.all(color: borderColor) : null,
+                      boxShadow: isDark
+                          ? []
+                          : [
+                              BoxShadow(
+                                color: shadowColor,
+                                blurRadius: 20,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.description_outlined,
-                                size: 14, color: Color(0xFF2563EB)),
+                            Icon(
+                              Icons.description_outlined,
+                              size: 14,
+                              color: primary,
+                            ),
                             const SizedBox(width: 6),
                             Text(
                               "ORIGINAL REPORT",
-                              style: TextStyle(
+                              style: GoogleFonts.plusJakartaSans(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 1,
@@ -265,10 +325,11 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          widget.ticket["description"] ?? "No description provided.",
-                          style: TextStyle(
+                          widget.ticket["description"] ??
+                              "No description provided.",
+                          style: GoogleFonts.plusJakartaSans(
                             height: 1.6,
-                            fontSize: 13,
+                            fontSize: 14,
                             color: textSecondary,
                           ),
                         ),
@@ -283,7 +344,12 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                     steps: _buildTimelineSteps(),
                     cardColor: timelineBg,
                     textPrimary: textPrimary,
+                    textMuted: textMuted,
                     dividerColor: dividerColor,
+                    primary: primary,
+                    isDark: isDark,
+                    borderColor: borderColor,
+                    shadowColor: shadowColor,
                   ),
 
                   const SizedBox(height: 16),
@@ -292,15 +358,21 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                   Row(
                     children: [
                       _badge(
-                        "STATUS", status,
-                        const Color(0xFF2563EB),
-                        isDark ? const Color(0xFF1D3461) : const Color(0xFFEFF6FF),
+                        "STATUS",
+                        status,
+                        _statusColor(status, primary),
+                        isDark
+                            ? const Color(0xFF2A2456)
+                            : const Color(0xFFEDEBFF),
                       ),
                       const SizedBox(width: 10),
                       _badge(
-                        "PRIORITY", priority,
-                        const Color(0xFFEF4444),
-                        isDark ? const Color(0xFF450A0A) : const Color(0xFFFEF2F2),
+                        "PRIORITY",
+                        priority,
+                        _priorityColor(priority),
+                        isDark
+                            ? const Color(0xFF3A2C16)
+                            : const Color(0xFFFFF1E0),
                       ),
                     ],
                   ),
@@ -309,7 +381,7 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
 
                   Text(
                     "CONVERSATION",
-                    style: TextStyle(
+                    style: GoogleFonts.plusJakartaSans(
                       fontWeight: FontWeight.bold,
                       fontSize: 11,
                       letterSpacing: 1,
@@ -321,36 +393,50 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
 
                   // 💬 CHAT (data asli dari ticket_comments)
                   if (isLoadingComments)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 24),
-                      child: Center(child: CircularProgressIndicator()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: CircularProgressIndicator(color: primary),
+                      ),
                     )
                   else if (_comments.isEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Text(
                         "Belum ada komentar. Mulai percakapan di bawah.",
-                        style: TextStyle(color: textMuted, fontSize: 13),
+                        style: GoogleFonts.plusJakartaSans(
+                          color: textMuted,
+                          fontSize: 13,
+                        ),
                       ),
                     )
                   else
                     ..._comments.map((c) {
-                      final senderRole = (c["sender_role"] ?? "user").toString();
+                      final senderRole = (c["sender_role"] ?? "user")
+                          .toString();
                       final isUser = senderRole == "user";
-                      final senderName = (c["sender_name"] ?? "Unknown").toString();
+                      final senderName = (c["sender_name"] ?? "Unknown")
+                          .toString();
                       final initials = senderName.trim().isNotEmpty
-                          ? senderName.trim().split(" ").map((w) => w[0]).take(2).join().toUpperCase()
+                          ? senderName
+                                .trim()
+                                .split(" ")
+                                .map((w) => w[0])
+                                .take(2)
+                                .join()
+                                .toUpperCase()
                           : "U";
                       final avatarColor = isUser
-                          ? const Color(0xFF6366F1)
-                          : const Color(0xFFF59E0B);
+                          ? primary
+                          : const Color(0xFFFF9F43);
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment:
-                              isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+                          mainAxisAlignment: isUser
+                              ? MainAxisAlignment.end
+                              : MainAxisAlignment.start,
                           children: [
                             if (!isUser) ...[
                               _avatar(initials, avatarColor),
@@ -364,29 +450,41 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                                 children: [
                                   Text(
                                     "$senderName • ${_timeAgo(c["created_at"])}",
-                                    style: TextStyle(fontSize: 11, color: textMuted),
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 11,
+                                      color: textMuted,
+                                    ),
                                   ),
                                   const SizedBox(height: 6),
                                   Container(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 14, vertical: 12),
+                                      horizontal: 14,
+                                      vertical: 12,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: isUser
-                                          ? const Color(0xFF2563EB)
-                                          : bubbleAdminBg,
+                                      color: isUser ? primary : bubbleAdminBg,
                                       borderRadius: BorderRadius.only(
-                                        topLeft: Radius.circular(isUser ? 16 : 4),
-                                        topRight: Radius.circular(isUser ? 4 : 16),
+                                        topLeft: Radius.circular(
+                                          isUser ? 16 : 4,
+                                        ),
+                                        topRight: Radius.circular(
+                                          isUser ? 4 : 16,
+                                        ),
                                         bottomLeft: const Radius.circular(16),
                                         bottomRight: const Radius.circular(16),
                                       ),
+                                      border: (!isUser && !isDark)
+                                          ? Border.all(color: borderColor)
+                                          : null,
                                     ),
                                     child: Text(
                                       (c["message"] ?? "").toString(),
-                                      style: TextStyle(
+                                      style: GoogleFonts.plusJakartaSans(
                                         fontSize: 13,
                                         height: 1.5,
-                                        color: isUser ? Colors.white : bubbleAdminText,
+                                        color: isUser
+                                            ? Colors.white
+                                            : bubbleAdminText,
                                       ),
                                     ),
                                   ),
@@ -409,67 +507,73 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
 
             // ✍️ INPUT BAR (kirim komentar asli)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: inputBarBg,
-                boxShadow: [
-                  BoxShadow(
-                    color: isDark
-                        ? const Color.fromRGBO(0, 0, 0, 0.3)
-                        : const Color(0x0F000000),
-                    blurRadius: 8,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
+                border: Border(top: BorderSide(color: borderColor)),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _commentController,
-                      style: TextStyle(fontSize: 14, color: textPrimary),
-                      decoration: InputDecoration(
-                        hintText: "Add a comment...",
-                        hintStyle: TextStyle(color: textMuted, fontSize: 14),
-                        filled: true,
-                        fillColor: inputBg,
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none,
+              child: SafeArea(
+                top: false,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _commentController,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          color: textPrimary,
                         ),
-                        suffixIcon: Icon(
-                          Icons.attach_file,
-                          color: textMuted,
-                          size: 20,
+                        decoration: InputDecoration(
+                          hintText: "Add a comment...",
+                          hintStyle: GoogleFonts.plusJakartaSans(
+                            color: textMuted,
+                            fontSize: 14,
+                          ),
+                          filled: true,
+                          fillColor: fieldBg,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide.none,
+                          ),
+                          suffixIcon: Icon(
+                            Icons.attach_file,
+                            color: textMuted,
+                            size: 20,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF2563EB),
-                      shape: BoxShape.circle,
-                    ),
-                    child: isSending
-                        ? const Padding(
-                            padding: EdgeInsets.all(12),
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
+                    const SizedBox(width: 12),
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: const BoxDecoration(
+                        color: primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: isSending
+                          ? const Padding(
+                              padding: EdgeInsets.all(12),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : IconButton(
+                              icon: const Icon(
+                                Icons.send_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              onPressed: _sendComment,
                             ),
-                          )
-                        : IconButton(
-                            icon: const Icon(Icons.send_rounded,
-                                color: Colors.white, size: 20),
-                            onPressed: _sendComment,
-                          ),
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -478,34 +582,48 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
     );
   }
 
-  // 🗂️ TRACKING TIMELINE (sekarang nerima steps dari luar, bukan hardcoded)
+  // 🗂️ TRACKING TIMELINE (tetap nerima steps dari luar, bukan hardcoded)
   Widget _buildTrackingTimeline({
     required List<Map<String, String>> steps,
     required Color cardColor,
     required Color textPrimary,
+    required Color textMuted,
     required Color dividerColor,
+    required Color primary,
+    required bool isDark,
+    required Color borderColor,
+    required Color shadowColor,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(22),
+        border: isDark ? Border.all(color: borderColor) : null,
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: shadowColor,
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.linear_scale_rounded,
-                  size: 14, color: Color(0xFF2563EB)),
+              Icon(Icons.linear_scale_rounded, size: 14, color: primary),
               const SizedBox(width: 6),
-              const Text(
+              Text(
                 "TRACKING TIMELINE",
-                style: TextStyle(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1,
-                  color: Color(0xFF94A3B8),
+                  color: textMuted,
                 ),
               ),
             ],
@@ -524,14 +642,14 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                     width: 36,
                     child: Column(
                       children: [
-                        _timelineDot(state, dividerColor),
+                        _timelineDot(state, dividerColor, primary),
                         if (!isLast)
                           Expanded(
                             child: Container(
                               width: 2,
                               color: state == "upcoming"
                                   ? dividerColor
-                                  : const Color(0xFF2563EB),
+                                  : primary,
                             ),
                           ),
                       ],
@@ -546,11 +664,11 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                         children: [
                           Text(
                             step["label"]!,
-                            style: TextStyle(
+                            style: GoogleFonts.plusJakartaSans(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: state == "upcoming"
-                                  ? const Color(0xFF94A3B8)
+                                  ? textMuted
                                   : textPrimary,
                             ),
                           ),
@@ -559,15 +677,13 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                             state == "completed"
                                 ? "COMPLETED"
                                 : state == "active"
-                                    ? "ACTIVE"
-                                    : "UPCOMING",
-                            style: TextStyle(
+                                ? "ACTIVE"
+                                : "UPCOMING",
+                            style: GoogleFonts.plusJakartaSans(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 0.5,
-                              color: state == "upcoming"
-                                  ? const Color(0xFF94A3B8)
-                                  : const Color(0xFF2563EB),
+                              color: state == "upcoming" ? textMuted : primary,
                             ),
                           ),
                         ],
@@ -583,15 +699,12 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
     );
   }
 
-  Widget _timelineDot(String state, Color dividerColor) {
+  Widget _timelineDot(String state, Color dividerColor, Color primary) {
     if (state == "completed") {
       return Container(
         width: 32,
         height: 32,
-        decoration: const BoxDecoration(
-          color: Color(0xFF2563EB),
-          shape: BoxShape.circle,
-        ),
+        decoration: BoxDecoration(color: primary, shape: BoxShape.circle),
         child: const Icon(Icons.check, color: Colors.white, size: 16),
       );
     } else if (state == "active") {
@@ -599,12 +712,15 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: const Color(0xFF2563EB),
+          color: primary,
           shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFFBFDBFE), width: 4),
+          border: Border.all(color: primary.withOpacity(0.25), width: 4),
         ),
         child: const DecoratedBox(
-          decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+          ),
         ),
       );
     } else {
@@ -616,7 +732,7 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
           shape: BoxShape.circle,
           border: Border.all(color: dividerColor, width: 2),
         ),
-        child: const Icon(Icons.lock_outline, color: Color(0xFF94A3B8), size: 14),
+        child: Icon(Icons.lock_outline, color: dividerColor, size: 14),
       );
     }
   }
@@ -627,7 +743,7 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
       backgroundColor: color,
       child: Text(
         initials,
-        style: const TextStyle(
+        style: GoogleFonts.plusJakartaSans(
           color: Colors.white,
           fontSize: 12,
           fontWeight: FontWeight.bold,
@@ -654,7 +770,11 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
           const SizedBox(width: 6),
           Text(
             "$title: $value",
-            style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
+            style: GoogleFonts.plusJakartaSans(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
           ),
         ],
       ),

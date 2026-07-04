@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../dashboard/dashboard_page.dart';
 import '../helpdesk/helpdesk_dashboard_page.dart';
 import '../auth/register_page.dart';
+import '../admin/admin_dashboard_page.dart';
 
 class LoginPage extends StatefulWidget {
   final Function(bool) toggleTheme;
@@ -12,16 +15,12 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-
-  final Map<String, Map<String, String>> users = {
-    "admin@gmail.com": {"password": "admin123", "role": "admin"},
-    "user@gmail.com": {"password": "user123", "role": "user"},
-  };
 
   bool _keepLoggedIn = false;
   bool _obscurePassword = true;
+  bool _isLoading = false; // Tambahan untuk efek loading di tombol
 
   @override
   Widget build(BuildContext context) {
@@ -111,9 +110,9 @@ class _LoginPageState extends State<LoginPage> {
 
                   const SizedBox(height: 28),
 
-                  // Username
+                  // Email Input
                   Text(
-                    "Username",
+                    "Email",
                     style: TextStyle(
                       color: labelColor,
                       fontWeight: FontWeight.w500,
@@ -122,13 +121,13 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 8),
                   TextField(
-                    controller: usernameController,
+                    controller: emailController,
                     style: TextStyle(color: textPrimary, fontSize: 14),
                     decoration: InputDecoration(
-                      hintText: "e.g. alex_support",
+                      hintText: "e.g. alex@gmail.com",
                       hintStyle: TextStyle(color: hintColor, fontSize: 14),
                       prefixIcon: Icon(
-                        Icons.person_outline,
+                        Icons.email_outlined,
                         color: iconColor,
                         size: 20,
                       ),
@@ -272,68 +271,119 @@ class _LoginPageState extends State<LoginPage> {
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      onPressed: () {
-                        final email = usernameController.text.trim();
-                        final password = passwordController.text.trim();
+                      onPressed: _isLoading
+                          ? null
+                          : () async {
+                              final email = emailController.text.trim();
+                              final password = passwordController.text.trim();
 
-                        //debug
-                        print("EMAIL: $email");
-                        print("DATA: ${users[email]}");
-                        print("ROLE: ${users[email]?["role"]}");
+                              if (email.isEmpty || password.isEmpty) {
+                                _showError(
+                                  "Email dan password tidak boleh kosong",
+                                );
+                                return;
+                              }
 
-                        if (users.containsKey(email) &&
-                            users[email]!["password"] == password) {
-                          final role = users[email]!["role"]!;
+                              setState(() => _isLoading = true);
 
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) {
-                                // Routing berdasarkan role:
-                                if (role == "helpdesk") {
-                                  return HelpdeskDashboardPage(
-                                    toggleTheme: widget.toggleTheme,
-                                  );
+                              try {
+                                // Mengecek data user ke Supabase
+                                final response = await Supabase.instance.client
+                                    .from('users')
+                                    .select()
+                                    .eq('email', email)
+                                    .eq('password', password)
+                                    .maybeSingle();
+
+                                if (response == null) {
+                                  _showError("Email atau password salah");
                                 } else {
-                                  return DashboardPage(
-                                    role: role,
-                                    toggleTheme: widget.toggleTheme,
+                                  // Cek apakah user aktif
+                                  if (response['is_active'] == false) {
+                                    _showError("Akun ini sedang dinonaktifkan");
+                                    return;
+                                  }
+
+                                  // Simpan sesi ke SharedPreferences
+                                  final prefs =
+                                      await SharedPreferences.getInstance();
+                                  await prefs.setString(
+                                    'user_id',
+                                    response['id'].toString(),
+                                  );
+                                  await prefs.setString(
+                                    'user_email',
+                                    response['email'],
+                                  );
+                                  await prefs.setString(
+                                    'user_name',
+                                    response['full_name'] ?? 'Unknown',
+                                  );
+                                  await prefs.setString(
+                                    'user_role',
+                                    response['role'],
+                                  );
+
+                                  // Hanya helpdesk yang punya division
+                                  if (response['division'] != null) {
+                                    await prefs.setString(
+                                      'user_division',
+                                      response['division'],
+                                    );
+                                  } else {
+                                    await prefs.remove('user_division');
+                                  }
+
+                                  final role = response['role'];
+
+                                  if (!mounted) return;
+                                  // Routing berdasarkan role asli dari database
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) {
+                                        if (role == "admin") {
+                                          return AdminDashboardPage(
+                                            toggleTheme: widget.toggleTheme,
+                                          );
+                                        } else if (role == "helpdesk") {
+                                          return HelpdeskDashboardPage(
+                                            toggleTheme: widget.toggleTheme,
+                                          );
+                                        } else {
+                                          return DashboardPage(
+                                            role: role,
+                                            toggleTheme: widget.toggleTheme,
+                                          );
+                                        }
+                                      },
+                                    ),
                                   );
                                 }
-                              },
-                            ),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Row(
-                                children: [
-                                  Icon(
-                                    Icons.error_outline,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
-                                  SizedBox(width: 10),
-                                  Text("Email atau password salah"),
-                                ],
+                              } catch (e) {
+                                _showError("Gagal terhubung ke database: $e");
+                              } finally {
+                                if (mounted) {
+                                  setState(() => _isLoading = false);
+                                }
+                              }
+                            },
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
                               ),
-                              backgroundColor: const Color(0xFFEF4444),
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                            )
+                          : const Text(
+                              "Login",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
-                              margin: const EdgeInsets.all(16),
                             ),
-                          );
-                        }
-                      },
-                      child: const Text(
-                        "Login",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
                     ),
                   ),
 
@@ -382,6 +432,25 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // Fungsi helper untuk nampilin error biar rapi
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white, size: 18),
+            const SizedBox(width: 10),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: const Color(0xFFEF4444),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
       ),
     );
   }
