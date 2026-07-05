@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../dashboard/dashboard_page.dart';
 import '../profile/profile_page.dart';
 import 'create_ticket_page.dart';
@@ -22,6 +23,12 @@ class _TicketListPageState extends State<TicketListPage> {
 
   List<Map<String, dynamic>> _tickets = [];
   bool isLoading = true;
+
+  // ── STYLE GUIDE SEMANTIC COLORS ──
+  static const _primary = Color(0xFF6C63FF);
+  static const _danger = Color(0xFFF45B69);
+  static const _warning = Color(0xFFFF9F43);
+  static const _success = Color(0xFF21D07B);
 
   @override
   void initState() {
@@ -86,7 +93,7 @@ class _TicketListPageState extends State<TicketListPage> {
         "Sep",
         "Oct",
         "Nov",
-        "Dec"
+        "Dec",
       ];
       return "${months[date.month - 1]} ${date.day}, ${date.year}";
     } catch (_) {
@@ -108,28 +115,23 @@ class _TicketListPageState extends State<TicketListPage> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => DashboardPage(
-            role: "user",
-            toggleTheme: widget.toggleTheme,
-          ),
+          builder: (_) =>
+              DashboardPage(role: "user", toggleTheme: widget.toggleTheme),
         ),
       );
     } else if (index == 2) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => NotificationPage(
-            toggleTheme: widget.toggleTheme,
-          ),
+          builder: (_) => NotificationPage(toggleTheme: widget.toggleTheme),
         ),
       );
     } else if (index == 3) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => ProfilePage(
-            toggleTheme: widget.toggleTheme ?? (value) {},
-          ),
+          builder: (_) =>
+              ProfilePage(toggleTheme: widget.toggleTheme ?? (value) {}),
         ),
       );
     }
@@ -141,9 +143,7 @@ class _TicketListPageState extends State<TicketListPage> {
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(
-        builder: (_) => CreateTicketPage(
-          toggleTheme: widget.toggleTheme,
-        ),
+        builder: (_) => CreateTicketPage(toggleTheme: widget.toggleTheme),
       ),
     );
 
@@ -161,13 +161,13 @@ class _TicketListPageState extends State<TicketListPage> {
               Expanded(
                 child: Text(
                   "Ticket \"${result["title"]}\" submitted successfully!",
-                  style: const TextStyle(fontSize: 13),
+                  style: GoogleFonts.plusJakartaSans(fontSize: 13),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          backgroundColor: const Color(0xFF16A34A),
+          backgroundColor: _success,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -183,11 +183,21 @@ class _TicketListPageState extends State<TicketListPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
-    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final textPrimary = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-    final navBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final bgColor = isDark ? const Color(0xFF14142B) : const Color(0xFFEDEFF7);
+    final cardColor = isDark ? const Color(0xFF1F1B3A) : Colors.white;
+    final textPrimary = isDark
+        ? const Color(0xFFF1F1FB)
+        : const Color(0xFF14142B);
+    final textSecondary = isDark
+        ? const Color(0xFFA0A0B8)
+        : const Color(0xFF92929D);
+    final borderColor = isDark
+        ? const Color(0xFF2E2A52)
+        : const Color(0xFFF0F1F6);
+    final navBg = isDark ? const Color(0xFF1F1B3A) : Colors.white;
+    final shadowColor = isDark
+        ? Colors.black.withOpacity(0.25)
+        : _primary.withOpacity(0.06);
 
     final activeTickets = _tickets
         .where((t) => t["status"] != "RESOLVED")
@@ -200,55 +210,72 @@ class _TicketListPageState extends State<TicketListPage> {
     return Scaffold(
       backgroundColor: bgColor,
       floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF2563EB),
+        backgroundColor: _primary,
         elevation: 4,
         shape: const CircleBorder(),
         onPressed: _openCreateTicket,
         child: const Icon(Icons.add, color: Colors.white),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        selectedItemColor: const Color(0xFF2563EB),
-        unselectedItemColor: const Color(0xFF94A3B8),
-        selectedLabelStyle: const TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
+      bottomNavigationBar: Container(
+        margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        decoration: BoxDecoration(
+          color: navBg,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 10,
-          letterSpacing: 0.5,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BottomNavigationBar(
+            currentIndex: _selectedIndex,
+            onTap: _onItemTapped,
+            selectedItemColor: _primary,
+            unselectedItemColor: textSecondary,
+            selectedLabelStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
+            ),
+            unselectedLabelStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.3,
+            ),
+            backgroundColor: navBg,
+            elevation: 0,
+            type: BottomNavigationBarType.fixed,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.grid_view_rounded),
+                label: "Home",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.confirmation_num_outlined),
+                label: "Ticket",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.notifications_none),
+                label: "Notif",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                label: "Profile",
+              ),
+            ],
+          ),
         ),
-        backgroundColor: navBg,
-        elevation: 8,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.grid_view_rounded),
-            label: "HOME",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.confirmation_num_outlined),
-            label: "TICKETS",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_none),
-            label: "NOTIFICATIONS",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: "PROFILE",
-          ),
-        ],
       ),
       body: SafeArea(
         child: isLoading
-            ? const Center(
-                child: CircularProgressIndicator(),
-              )
+            ? Center(child: CircularProgressIndicator(color: _primary))
             : RefreshIndicator(
                 onRefresh: _loadTickets,
+                color: _primary,
                 child: ListView(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
@@ -265,8 +292,8 @@ class _TicketListPageState extends State<TicketListPage> {
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1E293B),
-                                borderRadius: BorderRadius.circular(10),
+                                color: const Color(0xFF14142B),
+                                borderRadius: BorderRadius.circular(14),
                               ),
                               child: const Icon(
                                 Icons.confirmation_num,
@@ -275,10 +302,10 @@ class _TicketListPageState extends State<TicketListPage> {
                               ),
                             ),
                             const SizedBox(width: 10),
-                            const Text(
+                            Text(
                               "Concierge",
-                              style: TextStyle(
-                                color: Color(0xFF2563EB),
+                              style: GoogleFonts.plusJakartaSans(
+                                color: _primary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
                                 letterSpacing: -0.3,
@@ -286,20 +313,36 @@ class _TicketListPageState extends State<TicketListPage> {
                             ),
                           ],
                         ),
-                        Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: cardColor,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: borderColor),
-                          ),
-                          child: Icon(
-                            Icons.notifications_outlined,
-                            color: isDark
-                                ? const Color(0xFF94A3B8)
-                                : const Color(0xFF475569),
-                            size: 20,
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => NotificationPage(
+                                  toggleTheme: widget.toggleTheme,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: cardColor,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: shadowColor,
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.notifications_outlined,
+                              color: textSecondary,
+                              size: 20,
+                            ),
                           ),
                         ),
                       ],
@@ -309,7 +352,7 @@ class _TicketListPageState extends State<TicketListPage> {
 
                     Text(
                       "Your Tickets",
-                      style: TextStyle(
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 26,
                         fontWeight: FontWeight.bold,
                         color: textPrimary,
@@ -317,10 +360,10 @@ class _TicketListPageState extends State<TicketListPage> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       "Manage and track your active support requests.",
-                      style: TextStyle(
-                        color: Color(0xFF94A3B8),
+                      style: GoogleFonts.plusJakartaSans(
+                        color: textSecondary,
                         fontSize: 14,
                         height: 1.4,
                       ),
@@ -332,31 +375,37 @@ class _TicketListPageState extends State<TicketListPage> {
                       children: [
                         Expanded(
                           child: Container(
-                            height: 48,
+                            height: 50,
                             padding: const EdgeInsets.symmetric(horizontal: 14),
                             decoration: BoxDecoration(
                               color: cardColor,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: borderColor),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: shadowColor,
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
                             child: Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.search,
-                                  color: Color(0xFF94A3B8),
+                                  color: textSecondary,
                                   size: 20,
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: TextField(
-                                    style: TextStyle(
+                                    style: GoogleFonts.plusJakartaSans(
                                       fontSize: 14,
                                       color: textPrimary,
                                     ),
-                                    decoration: const InputDecoration(
+                                    decoration: InputDecoration(
                                       hintText: "Search by ID or Subject...",
-                                      hintStyle: TextStyle(
-                                        color: Color(0xFF94A3B8),
+                                      hintStyle: GoogleFonts.plusJakartaSans(
+                                        color: textSecondary,
                                         fontSize: 14,
                                       ),
                                       border: InputBorder.none,
@@ -371,18 +420,22 @@ class _TicketListPageState extends State<TicketListPage> {
                         ),
                         const SizedBox(width: 10),
                         Container(
-                          width: 48,
-                          height: 48,
+                          width: 50,
+                          height: 50,
                           decoration: BoxDecoration(
                             color: cardColor,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: borderColor),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: shadowColor,
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
                           child: Icon(
                             Icons.tune,
-                            color: isDark
-                                ? const Color(0xFF94A3B8)
-                                : const Color(0xFF475569),
+                            color: textSecondary,
                             size: 20,
                           ),
                         ),
@@ -392,7 +445,12 @@ class _TicketListPageState extends State<TicketListPage> {
                     const SizedBox(height: 16),
 
                     if (_tickets.isEmpty)
-                      _emptyState(cardColor: cardColor, textPrimary: textPrimary),
+                      _emptyState(
+                        cardColor: cardColor,
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                        shadowColor: shadowColor,
+                      ),
 
                     ...activeTickets.map(
                       (t) => _ticketCard(
@@ -403,6 +461,8 @@ class _TicketListPageState extends State<TicketListPage> {
                         description: t["description"] ?? "No description",
                         cardColor: cardColor,
                         textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                        shadowColor: shadowColor,
                         rawTicket: t,
                       ),
                     ),
@@ -417,9 +477,12 @@ class _TicketListPageState extends State<TicketListPage> {
                         title: t["title"] ?? "Untitled",
                         date: t["date"] ?? "Just now",
                         status: t["status"] ?? "RESOLVED",
-                        description: t["description"] ?? "No description provided.",
+                        description:
+                            t["description"] ?? "No description provided.",
                         cardColor: cardColor,
                         textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                        shadowColor: shadowColor,
                         rawTicket: t,
                       ),
                     ),
@@ -435,6 +498,8 @@ class _TicketListPageState extends State<TicketListPage> {
   Widget _emptyState({
     required Color cardColor,
     required Color textPrimary,
+    required Color textSecondary,
+    required Color shadowColor,
   }) {
     return Container(
       width: double.infinity,
@@ -442,29 +507,36 @@ class _TicketListPageState extends State<TicketListPage> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: shadowColor,
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
           const Icon(
             Icons.confirmation_num_outlined,
-            color: Color(0xFF94A3B8),
+            color: Color(0xFF92929D),
             size: 36,
           ),
           const SizedBox(height: 10),
           Text(
             "No tickets found",
-            style: TextStyle(
+            style: GoogleFonts.plusJakartaSans(
               color: textPrimary,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             "Create a new ticket by tapping the + button.",
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF94A3B8),
+            style: GoogleFonts.plusJakartaSans(
+              color: textSecondary,
               fontSize: 13,
             ),
           ),
@@ -478,8 +550,19 @@ class _TicketListPageState extends State<TicketListPage> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF2563EB),
         borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF6E8CFB), Color(0xFF4C3FD2)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: _primary.withOpacity(0.35),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Stack(
         clipBehavior: Clip.hardEdge,
@@ -511,9 +594,9 @@ class _TicketListPageState extends State<TicketListPage> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 "🔔 View Updates",
-                style: TextStyle(
+                style: GoogleFonts.plusJakartaSans(
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -521,40 +604,39 @@ class _TicketListPageState extends State<TicketListPage> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 "See latest updates on your tickets.",
-                style: TextStyle(
-                  color: Colors.white70,
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white.withOpacity(0.85),
                   fontSize: 13,
                   height: 1.5,
                 ),
               ),
               const SizedBox(height: 20),
               SizedBox(
-                height: 44,
+                height: 46,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF2563EB),
+                    foregroundColor: _primary,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                   onPressed: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => NotificationPage(
-                          toggleTheme: widget.toggleTheme,
-                        ),
+                        builder: (_) =>
+                            NotificationPage(toggleTheme: widget.toggleTheme),
                       ),
                     );
                   },
-                  child: const Text(
+                  child: Text(
                     "View Updates",
-                    style: TextStyle(
+                    style: GoogleFonts.plusJakartaSans(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -575,6 +657,8 @@ class _TicketListPageState extends State<TicketListPage> {
     required String status,
     required Color cardColor,
     required Color textPrimary,
+    required Color textSecondary,
+    required Color shadowColor,
     required Map<String, dynamic> rawTicket,
     String description = "No description provided.",
   }) {
@@ -584,23 +668,23 @@ class _TicketListPageState extends State<TicketListPage> {
 
     switch (status) {
       case "IN PROGRESS":
-        statusColor = const Color(0xFFBC4800);
-        statusBg = const Color(0xFFFFF0E6);
+        statusColor = _primary;
+        statusBg = const Color(0xFFEDEBFF);
         statusIcon = Icons.access_time;
         break;
       case "OPEN":
-        statusColor = const Color(0xFFEF4444);
-        statusBg = const Color(0xFFFEE2E2);
+        statusColor = _danger;
+        statusBg = const Color(0xFFFDE8EA);
         statusIcon = Icons.error_outline;
         break;
       case "PENDING":
-        statusColor = const Color(0xFFF97316);
-        statusBg = const Color(0xFFFFF7ED);
+        statusColor = _warning;
+        statusBg = const Color(0xFFFFEEDD);
         statusIcon = Icons.hourglass_bottom_rounded;
         break;
       default:
-        statusColor = const Color(0xFF475569);
-        statusBg = const Color(0xFFF1F5F9);
+        statusColor = _success;
+        statusBg = const Color(0xFFDFF7E4);
         statusIcon = Icons.check_circle_outline;
     }
 
@@ -618,12 +702,12 @@ class _TicketListPageState extends State<TicketListPage> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: cardColor,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: shadowColor,
+              blurRadius: 16,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -639,13 +723,13 @@ class _TicketListPageState extends State<TicketListPage> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
+                    color: const Color(0xFFEDEBFF),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     id,
-                    style: const TextStyle(
-                      color: Color(0xFF2563EB),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: _primary,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -653,8 +737,8 @@ class _TicketListPageState extends State<TicketListPage> {
                 ),
                 Text(
                   date,
-                  style: const TextStyle(
-                    color: Color(0xFF94A3B8),
+                  style: GoogleFonts.plusJakartaSans(
+                    color: textSecondary,
                     fontSize: 12,
                   ),
                 ),
@@ -663,7 +747,7 @@ class _TicketListPageState extends State<TicketListPage> {
             const SizedBox(height: 10),
             Text(
               title,
-              style: TextStyle(
+              style: GoogleFonts.plusJakartaSans(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: textPrimary,
@@ -690,7 +774,7 @@ class _TicketListPageState extends State<TicketListPage> {
                       const SizedBox(width: 5),
                       Text(
                         getUserStatus(status),
-                        style: TextStyle(
+                        style: GoogleFonts.plusJakartaSans(
                           color: statusColor,
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
@@ -700,11 +784,7 @@ class _TicketListPageState extends State<TicketListPage> {
                     ],
                   ),
                 ),
-                const Icon(
-                  Icons.chevron_right,
-                  color: Color(0xFF94A3B8),
-                  size: 20,
-                ),
+                Icon(Icons.chevron_right, color: textSecondary, size: 20),
               ],
             ),
           ],

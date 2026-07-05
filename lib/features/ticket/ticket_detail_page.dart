@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/ticket_service.dart';
 
 class TicketDetailPage extends StatefulWidget {
@@ -15,6 +18,10 @@ class TicketDetailPage extends StatefulWidget {
 class _TicketDetailPageState extends State<TicketDetailPage> {
   final TicketService _ticketService = TicketService();
   final TextEditingController _commentController = TextEditingController();
+
+  // Variabel untuk Attachment Gambar
+  File? _selectedImage;
+  final ImagePicker _picker = ImagePicker();
 
   List<Map<String, dynamic>> _comments = [];
   bool isLoadingComments = true;
@@ -32,10 +39,28 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
     super.dispose();
   }
 
+  // Fungsi ambil gambar dari galeri
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70,
+      );
+      if (image != null) {
+        setState(() {
+          _selectedImage = File(image.path);
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Failed to pick image: $e")));
+    }
+  }
+
   Future<void> _loadComments() async {
     final rawId = widget.ticket["ticketId"];
     if (rawId == null) {
-      // tiket belum punya id numerik asli (mis. masih dummy lama)
       setState(() => isLoadingComments = false);
       return;
     }
@@ -60,30 +85,56 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
     final text = _commentController.text.trim();
     final rawId = widget.ticket["ticketId"];
 
-    if (text.isEmpty || rawId == null || isSending) return;
+    // Jangan kirim kalau teks kosong DAN gambar kosong
+    if ((text.isEmpty && _selectedImage == null) || rawId == null || isSending)
+      return;
 
     setState(() => isSending = true);
 
     try {
+      String? attachmentUrl;
+
+      // 1. Upload Gambar ke Supabase Storage (Jika Ada)
+      if (_selectedImage != null) {
+        final fileExt = _selectedImage!.path.split('.').last;
+        final fileName = '${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+        final filePath = 'ticket_$rawId/$fileName';
+
+        // Upload ke bucket 'attachments'
+        await Supabase.instance.client.storage
+            .from('attachments')
+            .upload(filePath, _selectedImage!);
+
+        // Dapatkan Public URL
+        attachmentUrl = Supabase.instance.client.storage
+            .from('attachments')
+            .getPublicUrl(filePath);
+      }
+
+      // 2. Simpan Data ke Database
       await _ticketService.addComment(
         ticketId: rawId as int,
         senderRole: "user",
-        senderName: "Alex Johnson", // TODO: ganti pas auth asli sudah ada
-        message: text,
+        senderName: "Alex Johnson",
+        message: text.isEmpty ? "Sent an attachment" : text,
+        attachmentUrl: attachmentUrl, // Mengirim URL gambar
       );
+
       _commentController.clear();
+      setState(() {
+        _selectedImage = null; // Hapus preview setelah terkirim
+      });
       await _loadComments();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Failed to send comment: $e")));
+      ).showSnackBar(SnackBar(content: Text("Failed to send: $e")));
     } finally {
       if (mounted) setState(() => isSending = false);
     }
   }
 
-  // 🕒 Hitung "X ago" sederhana dari created_at
   String _timeAgo(dynamic rawDate) {
     if (rawDate == null) return "recently";
     try {
@@ -104,7 +155,7 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
     final isInProgress = status == "IN PROGRESS";
 
     final doneFlags = <bool>[
-      true, // Ticket Created selalu selesai
+      true,
       assignedTo != null && assignedTo.toString().isNotEmpty,
       isInProgress || isResolved,
       isResolved,
@@ -157,9 +208,7 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // ── STYLE GUIDE PALETTE (disamakan dengan AdminTicketDetailPage) ──
     const primary = Color(0xFF6C63FF);
-
     final bgColor = isDark ? const Color(0xFF14142B) : const Color(0xFFEDEFF7);
     final cardColor = isDark ? const Color(0xFF1F1B3A) : Colors.white;
     final textPrimary = isDark
@@ -200,7 +249,7 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // 🔝 HEADER
+            // HEADER
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
               child: Row(
@@ -232,12 +281,11 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
               ),
             ),
 
-            // 🔽 CONTENT
+            // CONTENT
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 children: [
-                  // ID + TIME
                   Row(
                     children: [
                       Container(
@@ -268,10 +316,7 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 12),
-
-                  // TITLE
                   Text(
                     widget.ticket["title"] ?? "Untitled Ticket",
                     style: GoogleFonts.plusJakartaSans(
@@ -281,10 +326,9 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                       height: 1.3,
                     ),
                   ),
-
                   const SizedBox(height: 16),
 
-                  // 📄 DESCRIPTION CARD
+                  // DESCRIPTION CARD
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -336,10 +380,9 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 16),
 
-                  // 🗂️ TRACKING TIMELINE (data asli)
+                  // TIMELINE
                   _buildTrackingTimeline(
                     steps: _buildTimelineSteps(),
                     cardColor: timelineBg,
@@ -351,10 +394,9 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                     borderColor: borderColor,
                     shadowColor: shadowColor,
                   ),
-
                   const SizedBox(height: 16),
 
-                  // STATUS & PRIORITY (data asli)
+                  // STATUS & PRIORITY
                   Row(
                     children: [
                       _badge(
@@ -376,7 +418,6 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 20),
 
                   Text(
@@ -388,10 +429,9 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                       color: textMuted,
                     ),
                   ),
-
                   const SizedBox(height: 12),
 
-                  // 💬 CHAT (data asli dari ticket_comments)
+                  // CHAT AREA
                   if (isLoadingComments)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 24),
@@ -429,6 +469,8 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                       final avatarColor = isUser
                           ? primary
                           : const Color(0xFFFF9F43);
+
+                      final attachment = c["attachment_url"] as String?;
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16),
@@ -477,15 +519,48 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                                           ? Border.all(color: borderColor)
                                           : null,
                                     ),
-                                    child: Text(
-                                      (c["message"] ?? "").toString(),
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 13,
-                                        height: 1.5,
-                                        color: isUser
-                                            ? Colors.white
-                                            : bubbleAdminText,
-                                      ),
+                                    child: Column(
+                                      crossAxisAlignment: isUser
+                                          ? CrossAxisAlignment.end
+                                          : CrossAxisAlignment.start,
+                                      children: [
+                                        // RENDER GAMBAR KALAU ADA
+                                        if (attachment != null &&
+                                            attachment.isNotEmpty)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              bottom: 8.0,
+                                            ),
+                                            child: ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              child: Image.network(
+                                                attachment,
+                                                width: 200,
+                                                fit: BoxFit.cover,
+                                                errorBuilder:
+                                                    (ctx, err, stack) =>
+                                                        const Icon(
+                                                          Icons.broken_image,
+                                                          color: Colors.white,
+                                                        ),
+                                              ),
+                                            ),
+                                          ),
+                                        // RENDER TEKS
+                                        if (c["message"] != null &&
+                                            c["message"].toString().isNotEmpty)
+                                          Text(
+                                            c["message"].toString(),
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 13,
+                                              height: 1.5,
+                                              color: isUser
+                                                  ? Colors.white
+                                                  : bubbleAdminText,
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                   ),
                                 ],
@@ -499,13 +574,12 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                         ),
                       );
                     }),
-
                   const SizedBox(height: 8),
                 ],
               ),
             ),
 
-            // ✍️ INPUT BAR (kirim komentar asli)
+            // INPUT BAR
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
@@ -514,63 +588,104 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
               ),
               child: SafeArea(
                 top: false,
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _commentController,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 14,
-                          color: textPrimary,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: "Add a comment...",
-                          hintStyle: GoogleFonts.plusJakartaSans(
-                            color: textMuted,
-                            fontSize: 14,
-                          ),
-                          filled: true,
-                          fillColor: fieldBg,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide.none,
-                          ),
-                          suffixIcon: Icon(
-                            Icons.attach_file,
-                            color: textMuted,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: const BoxDecoration(
-                        color: primary,
-                        shape: BoxShape.circle,
-                      ),
-                      child: isSending
-                          ? const Padding(
-                              padding: EdgeInsets.all(12),
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
+                    // Preview Gambar sebelum dikirim
+                    if (_selectedImage != null)
+                      Stack(
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            height: 60,
+                            width: 60,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              image: DecorationImage(
+                                image: FileImage(_selectedImage!),
+                                fit: BoxFit.cover,
                               ),
-                            )
-                          : IconButton(
-                              icon: const Icon(
-                                Icons.send_rounded,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                              onPressed: _sendComment,
                             ),
+                          ),
+                          Positioned(
+                            right: -10,
+                            top: -10,
+                            child: IconButton(
+                              icon: const Icon(Icons.cancel, color: Colors.red),
+                              onPressed: () =>
+                                  setState(() => _selectedImage = null),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _commentController,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              color: textPrimary,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: "Add a comment...",
+                              hintStyle: GoogleFonts.plusJakartaSans(
+                                color: textMuted,
+                                fontSize: 14,
+                              ),
+                              filled: true,
+                              fillColor: fieldBg,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(24),
+                                borderSide: BorderSide.none,
+                              ),
+                              // TOMBOL CLIP DI SINI
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _selectedImage != null
+                                      ? Icons.image
+                                      : Icons.attach_file,
+                                  color: _selectedImage != null
+                                      ? primary
+                                      : textMuted,
+                                  size: 20,
+                                ),
+                                onPressed: _pickImage,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: const BoxDecoration(
+                            color: primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: isSending
+                              ? const Padding(
+                                  padding: EdgeInsets.all(12),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : IconButton(
+                                  icon: const Icon(
+                                    Icons.send_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  onPressed: _sendComment,
+                                ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -582,7 +697,7 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
     );
   }
 
-  // 🗂️ TRACKING TIMELINE (tetap nerima steps dari luar, bukan hardcoded)
+  // WIDGET HELPER LAINNYA (TIDAK BERUBAH)
   Widget _buildTrackingTimeline({
     required List<Map<String, String>> steps,
     required Color cardColor,

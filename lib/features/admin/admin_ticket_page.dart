@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../services/ticket_service.dart';
 import 'admin_dashboard_page.dart';
 
@@ -151,51 +152,57 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
     setState(() => _selectedIndex = index);
   }
 
+  // ── STYLE GUIDE SEMANTIC COLORS ──
+  static const _primary = Color(0xFF6C63FF);
+  static const _danger = Color(0xFFF45B69);
+  static const _warning = Color(0xFFFF9F43);
+  static const _success = Color(0xFF21D07B);
+
   Color _statusColor(String status) {
     switch (status.toUpperCase()) {
       case "OPEN":
-        return const Color(0xFFEF4444);
+        return _danger;
       case "PENDING":
-        return const Color(0xFFF97316);
+        return _warning;
       case "IN PROGRESS":
-        return const Color(0xFF2563EB);
+        return _primary;
       case "RESOLVED":
       case "CLOSED":
-        return const Color(0xFF16A34A);
+        return _success;
       default:
-        return const Color(0xFF475569);
+        return const Color(0xFF92929D);
     }
   }
 
   Color _statusBg(String status) {
     switch (status.toUpperCase()) {
       case "OPEN":
-        return const Color(0xFFFEE2E2);
+        return const Color(0xFFFDE8EA);
       case "PENDING":
-        return const Color(0xFFFFF7ED);
+        return const Color(0xFFFFEEDD);
       case "IN PROGRESS":
-        return const Color(0xFFEFF6FF);
+        return const Color(0xFFEDEBFF);
       case "RESOLVED":
       case "CLOSED":
-        return const Color(0xFFDCFCE7);
+        return const Color(0xFFDFF7E4);
       default:
-        return const Color(0xFFF1F5F9);
+        return const Color(0xFFF0F1F6);
     }
   }
 
   Color _priorityColor(String p) {
     switch (p.toUpperCase()) {
       case "URGENT":
-        return const Color(0xFFDC2626);
+        return const Color(0xFFD6394B);
       case "HIGH":
-        return const Color(0xFFEF4444);
+        return _danger;
       case "MED":
       case "MEDIUM":
-        return const Color(0xFFF97316);
+        return _warning;
       case "LOW":
-        return const Color(0xFF16A34A);
+        return _success;
       default:
-        return const Color(0xFF475569);
+        return const Color(0xFF92929D);
     }
   }
 
@@ -219,27 +226,34 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
-    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final bgColor = isDark ? const Color(0xFF14142B) : const Color(0xFFEDEFF7);
+    final cardColor = isDark ? const Color(0xFF1F1B3A) : Colors.white;
     final textPrimary = isDark
-        ? const Color(0xFFF1F5F9)
-        : const Color(0xFF0F172A);
-    final textSecondary = isDark ? const Color(0xFF94A3B8) : Colors.grey[500]!;
-    final fieldBg = isDark ? const Color(0xFF0F172A) : const Color(0xFFEEF2FF);
+        ? const Color(0xFFF1F1FB)
+        : const Color(0xFF14142B);
+    final textSecondary = isDark
+        ? const Color(0xFFA0A0B8)
+        : const Color(0xFF92929D);
+    final fieldBg = isDark ? const Color(0xFF241F45) : const Color(0xFFF1E9FF);
     final borderColor = isDark
-        ? const Color(0xFF334155)
-        : const Color(0xFFE2E8F0);
+        ? const Color(0xFF2E2A52)
+        : const Color(0xFFF0F1F6);
     final dropdownBg = isDark
-        ? const Color(0xFF1E293B)
-        : const Color(0xFFEEF2FF);
+        ? const Color(0xFF241F45)
+        : const Color(0xFFF1E9FF);
+    final navBg = isDark ? const Color(0xFF1F1B3A) : Colors.white;
+    final shadowColor = isDark
+        ? Colors.black.withOpacity(0.25)
+        : _primary.withOpacity(0.06);
 
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? Center(child: CircularProgressIndicator(color: _primary))
             : RefreshIndicator(
                 onRefresh: _loadAdminTickets,
+                color: _primary,
                 child: ListView(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
@@ -256,8 +270,8 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1E293B),
-                                borderRadius: BorderRadius.circular(10),
+                                color: const Color(0xFF14142B),
+                                borderRadius: BorderRadius.circular(14),
                               ),
                               child: const Icon(
                                 Icons.admin_panel_settings,
@@ -266,10 +280,10 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                               ),
                             ),
                             const SizedBox(width: 10),
-                            const Text(
+                            Text(
                               "Concierge",
-                              style: TextStyle(
-                                color: Color(0xFF2563EB),
+                              style: GoogleFonts.plusJakartaSans(
+                                color: _primary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
                                 letterSpacing: -0.3,
@@ -291,18 +305,22 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                           child: Stack(
                             children: [
                               Container(
-                                width: 38,
-                                height: 38,
+                                width: 40,
+                                height: 40,
                                 decoration: BoxDecoration(
                                   color: cardColor,
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: borderColor),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: shadowColor,
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
                                 ),
                                 child: Icon(
                                   Icons.notifications_outlined,
-                                  color: isDark
-                                      ? const Color(0xFF94A3B8)
-                                      : const Color(0xFF475569),
+                                  color: textSecondary,
                                   size: 20,
                                 ),
                               ),
@@ -313,7 +331,7 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                                   width: 8,
                                   height: 8,
                                   decoration: const BoxDecoration(
-                                    color: Color(0xFFEF4444),
+                                    color: _danger,
                                     shape: BoxShape.circle,
                                   ),
                                 ),
@@ -328,7 +346,7 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
 
                     Text(
                       "Global Ticket Queue",
-                      style: TextStyle(
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: textPrimary,
@@ -338,7 +356,7 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                     const SizedBox(height: 4),
                     Text(
                       "Review and assign tickets to helpdesk agents.",
-                      style: TextStyle(
+                      style: GoogleFonts.plusJakartaSans(
                         color: textSecondary,
                         fontSize: 13,
                         height: 1.4,
@@ -355,15 +373,21 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                       ),
                       decoration: BoxDecoration(
                         color: cardColor,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: borderColor),
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: shadowColor,
+                            blurRadius: 20,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: Row(
                         children: [
                           _miniStat(
                             "ACTIVE TICKETS",
                             _activeTicketCount.toString(),
-                            const Color(0xFF2563EB),
+                            _primary,
                           ),
                           Container(
                             width: 1,
@@ -381,7 +405,7 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                                 )
                                 .length
                                 .toString(),
-                            const Color(0xFFEF4444),
+                            _danger,
                           ),
                         ],
                       ),
@@ -394,15 +418,21 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: cardColor,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: borderColor),
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: shadowColor,
+                            blurRadius: 20,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             "SEARCH TICKETS",
-                            style: TextStyle(
+                            style: GoogleFonts.plusJakartaSans(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: textSecondary,
@@ -413,10 +443,13 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                           TextField(
                             controller: _searchController,
                             onChanged: (_) => setState(() {}),
-                            style: TextStyle(fontSize: 14, color: textPrimary),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              color: textPrimary,
+                            ),
                             decoration: InputDecoration(
                               hintText: "ID, Subject, or User...",
-                              hintStyle: TextStyle(
+                              hintStyle: GoogleFonts.plusJakartaSans(
                                 color: textSecondary,
                                 fontSize: 14,
                               ),
@@ -432,13 +465,13 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                                 horizontal: 14,
                               ),
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide.none,
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(12),
                                 borderSide: const BorderSide(
-                                  color: Color(0xFF2563EB),
+                                  color: _primary,
                                   width: 1.5,
                                 ),
                               ),
@@ -449,7 +482,7 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
 
                           Text(
                             "STATUS",
-                            style: TextStyle(
+                            style: GoogleFonts.plusJakartaSans(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: textSecondary,
@@ -479,7 +512,7 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
 
                           Text(
                             "PRIORITY",
-                            style: TextStyle(
+                            style: GoogleFonts.plusJakartaSans(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: textSecondary,
@@ -510,14 +543,14 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                             children: [
                               Expanded(
                                 child: SizedBox(
-                                  height: 44,
+                                  height: 46,
                                   child: ElevatedButton.icon(
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF2563EB),
+                                      backgroundColor: _primary,
                                       foregroundColor: Colors.white,
                                       elevation: 0,
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
+                                        borderRadius: BorderRadius.circular(14),
                                       ),
                                     ),
                                     onPressed: () => setState(() {}),
@@ -525,9 +558,9 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                                       Icons.filter_list,
                                       size: 16,
                                     ),
-                                    label: const Text(
+                                    label: Text(
                                       "Apply Filters",
-                                      style: TextStyle(
+                                      style: GoogleFonts.plusJakartaSans(
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -536,11 +569,11 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                               ),
                               const SizedBox(width: 10),
                               Container(
-                                width: 44,
-                                height: 44,
+                                width: 46,
+                                height: 46,
                                 decoration: BoxDecoration(
                                   color: fieldBg,
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(14),
                                 ),
                                 child: IconButton(
                                   onPressed: () {
@@ -552,7 +585,7 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                                   },
                                   icon: const Icon(
                                     Icons.refresh_rounded,
-                                    color: Color(0xFF2563EB),
+                                    color: _primary,
                                     size: 20,
                                   ),
                                 ),
@@ -569,6 +602,7 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                       _emptyState(
                         cardColor: cardColor,
                         textPrimary: textPrimary,
+                        shadowColor: shadowColor,
                       ),
 
                     ..._filteredTickets.map(
@@ -578,6 +612,7 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                         textPrimary,
                         textSecondary,
                         borderColor,
+                        shadowColor,
                         isDark,
                       ),
                     ),
@@ -589,7 +624,10 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                       children: [
                         Text(
                           "Showing ${_filteredTickets.length} of ${_tickets.length}",
-                          style: TextStyle(fontSize: 12, color: textSecondary),
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            color: textSecondary,
+                          ),
                         ),
                         Row(
                           children: [
@@ -619,68 +657,108 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
               ),
       ),
 
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onNavTap,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF2563EB),
-        unselectedItemColor: const Color(0xFF94A3B8),
-        selectedLabelStyle: const TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
+      bottomNavigationBar: Container(
+        margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        decoration: BoxDecoration(
+          color: navBg,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
-        unselectedLabelStyle: const TextStyle(fontSize: 10, letterSpacing: 0.5),
-        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-        elevation: 8,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.grid_view_rounded),
-            label: "HOME",
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BottomNavigationBar(
+            currentIndex: _selectedIndex,
+            onTap: _onNavTap,
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: navBg,
+            elevation: 0,
+            selectedItemColor: _primary,
+            unselectedItemColor: textSecondary,
+            showSelectedLabels: true,
+            showUnselectedLabels: true,
+            selectedLabelStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
+            ),
+            unselectedLabelStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.3,
+            ),
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.grid_view_rounded),
+                label: "Dashboard",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.confirmation_num_outlined),
+                label: "Ticket",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.notifications_outlined),
+                label: "Notif",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                label: "Profile",
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.confirmation_num_outlined),
-            label: "ALL TICKETS",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_outlined),
-            label: "NOTIFICATIONS",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: "PROFILE",
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _emptyState({required Color cardColor, required Color textPrimary}) {
+  Widget _emptyState({
+    required Color cardColor,
+    required Color textPrimary,
+    required Color shadowColor,
+  }) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: shadowColor,
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
           const Icon(
             Icons.confirmation_num_outlined,
-            color: Color(0xFF94A3B8),
+            color: Color(0xFF92929D),
             size: 36,
           ),
           const SizedBox(height: 10),
           Text(
             "No tickets found",
-            style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold),
+            style: GoogleFonts.plusJakartaSans(
+              color: textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             "Try changing the filter or pull to refresh.",
             textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+            style: GoogleFonts.plusJakartaSans(
+              color: const Color(0xFF92929D),
+              fontSize: 13,
+            ),
           ),
         ],
       ),
@@ -693,6 +771,7 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
     Color textPrimary,
     Color textSecondary,
     Color borderColor,
+    Color shadowColor,
     bool isDark,
   ) {
     final isStrike = t["strikethrough"] == true;
@@ -719,8 +798,14 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: cardColor,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: borderColor),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -734,15 +819,15 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(6),
+                    color: const Color(0xFFEDEBFF),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     t["id"] ?? "#TK-0000",
-                    style: const TextStyle(
+                    style: GoogleFonts.plusJakartaSans(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2563EB),
+                      color: _primary,
                     ),
                   ),
                 ),
@@ -750,7 +835,7 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                 Expanded(
                   child: Text(
                     t["title"] ?? "Untitled",
-                    style: TextStyle(
+                    style: GoogleFonts.plusJakartaSans(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: isStrike ? textSecondary : textPrimary,
@@ -772,26 +857,29 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
               children: [
                 Text(
                   "Reported by ${t["reporter"] ?? "Unknown"}",
-                  style: TextStyle(fontSize: 12, color: textSecondary),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    color: textSecondary,
+                  ),
                 ),
                 Container(
                   width: 3,
                   height: 3,
                   margin: const EdgeInsets.symmetric(horizontal: 6),
                   decoration: const BoxDecoration(
-                    color: Color(0xFF94A3B8),
+                    color: Color(0xFF92929D),
                     shape: BoxShape.circle,
                   ),
                 ),
                 Expanded(
                   child: Text(
                     "Assigned to: ${t["assignedTo"] ?? "Unassigned"}",
-                    style: TextStyle(
+                    style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: t["assignedTo"] == "Unassigned"
-                          ? const Color(0xFFEF4444)
-                          : const Color(0xFF2563EB),
+                          ? _danger
+                          : _primary,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -814,7 +902,7 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                   ),
                   child: Text(
                     status,
-                    style: TextStyle(
+                    style: GoogleFonts.plusJakartaSans(
                       color: _statusColor(status),
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -829,7 +917,7 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
 
             Text(
               "${_priorityPrefix(priority)}$priority",
-              style: TextStyle(
+              style: GoogleFonts.plusJakartaSans(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: _priorityColor(priority),
@@ -845,7 +933,10 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
                 const SizedBox(width: 4),
                 Text(
                   t["time"] ?? "Just now",
-                  style: TextStyle(fontSize: 11, color: textSecondary),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    color: textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -873,7 +964,7 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
               const SizedBox(width: 8),
               Text(
                 label,
-                style: TextStyle(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                   color: color,
@@ -885,7 +976,7 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
           const SizedBox(height: 6),
           Text(
             value,
-            style: TextStyle(
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 26,
               fontWeight: FontWeight.bold,
               color: color,
@@ -908,7 +999,7 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
@@ -916,11 +1007,11 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
           isExpanded: true,
           icon: const Icon(
             Icons.keyboard_arrow_down_rounded,
-            color: Color(0xFF475569),
+            color: Color(0xFF92929D),
           ),
-          style: TextStyle(fontSize: 14, color: textColor),
+          style: GoogleFonts.plusJakartaSans(fontSize: 14, color: textColor),
           dropdownColor: bg,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           items: items.map((item) {
             return DropdownMenuItem(value: item, child: Text(item));
           }).toList(),
@@ -941,13 +1032,13 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
       height: 32,
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: borderColor),
       ),
       child: Icon(
         icon,
         size: 18,
-        color: active ? const Color(0xFF2563EB) : const Color(0xFF94A3B8),
+        color: active ? _primary : const Color(0xFF92929D),
       ),
     );
   }
@@ -957,16 +1048,16 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
       width: 32,
       height: 32,
       decoration: BoxDecoration(
-        color: active ? const Color(0xFF2563EB) : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
+        color: active ? _primary : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Center(
         child: Text(
           num,
-          style: TextStyle(
+          style: GoogleFonts.plusJakartaSans(
             fontSize: 13,
             fontWeight: FontWeight.bold,
-            color: active ? Colors.white : const Color(0xFF94A3B8),
+            color: active ? Colors.white : const Color(0xFF92929D),
           ),
         ),
       ),

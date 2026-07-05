@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../services/ticket_service.dart';
@@ -22,9 +24,14 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
   final TicketService _ticketService = TicketService();
   final TextEditingController _commentController = TextEditingController();
 
+  // Variabel untuk Attachment Gambar
+  File? _selectedImage;
+  final ImagePicker _picker = ImagePicker();
+
   List<Map<String, dynamic>> _comments = [];
   bool _isLoadingComments = true;
   bool _isAssigning = false;
+  bool _isSendingComment = false;
 
   List<String> _helpdeskAgents = [];
   bool _isLoadingAgents = true;
@@ -41,6 +48,25 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
   void dispose() {
     _commentController.dispose();
     super.dispose();
+  }
+
+  // Fungsi ambil gambar dari galeri
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70,
+      );
+      if (image != null) {
+        setState(() {
+          _selectedImage = File(image.path);
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Failed to pick image: $e")));
+    }
   }
 
   Future<void> _fetchHelpdeskAgents() async {
@@ -87,23 +113,57 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
 
   Future<void> _sendComment() async {
     final text = _commentController.text.trim();
-    if (text.isEmpty) return;
+    final dbId = widget.ticket["dbId"];
 
-    _commentController.clear();
+    if ((text.isEmpty && _selectedImage == null) ||
+        dbId == null ||
+        _isSendingComment)
+      return;
+
+    setState(() => _isSendingComment = true);
     FocusScope.of(context).unfocus();
 
     try {
+      String? attachmentUrl;
+
+      // 1. Upload Gambar ke Supabase Storage (Jika Ada)
+      if (_selectedImage != null) {
+        final fileExt = _selectedImage!.path.split('.').last;
+        final fileName = '${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+        final filePath = 'ticket_$dbId/$fileName';
+
+        // Upload ke bucket 'attachments'
+        await Supabase.instance.client.storage
+            .from('attachments')
+            .upload(filePath, _selectedImage!);
+
+        // Dapatkan Public URL
+        attachmentUrl = Supabase.instance.client.storage
+            .from('attachments')
+            .getPublicUrl(filePath);
+      }
+
+      // 2. Simpan Data ke Database
       await _ticketService.addComment(
-        ticketId: widget.ticket["dbId"],
+        ticketId: dbId,
         senderRole: "admin",
         senderName: "System Admin",
-        message: text,
+        message: text.isEmpty ? "Sent an attachment" : text,
+        attachmentUrl: attachmentUrl, // Mengirim URL gambar
       );
+
+      _commentController.clear();
+      setState(() {
+        _selectedImage = null; // Hapus preview setelah terkirim
+      });
       await _fetchComments();
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Failed to send comment: $e")));
+      ).showSnackBar(SnackBar(content: Text("Failed to send: $e")));
+    } finally {
+      if (mounted) setState(() => _isSendingComment = false);
     }
   }
 
@@ -192,9 +252,7 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // ── STYLE GUIDE PALETTE (sama dengan Dashboard/Notification/Profile) ──
     const primary = Color(0xFF6C63FF);
-
     final bgColor = isDark ? const Color(0xFF14142B) : const Color(0xFFEDEFF7);
     final cardColor = isDark ? const Color(0xFF1F1B3A) : Colors.white;
     final textPrimary = isDark
@@ -331,6 +389,7 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                           ),
                         ),
 
+                        // Render Attachment Utama
                         if (attachmentUrl != null &&
                             attachmentUrl.toString().isNotEmpty) ...[
                           const SizedBox(height: 20),
@@ -507,6 +566,7 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
 
                   const SizedBox(height: 20),
 
+                  // Assign Helpdesk Box
                   if (!isClosed)
                     Container(
                       padding: const EdgeInsets.all(20),
@@ -680,6 +740,8 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                   else
                     ..._comments.map((c) {
                       final isMe = c["sender_role"] == "admin";
+                      final attachment = c["attachment_url"] as String?;
+
                       return Container(
                         margin: const EdgeInsets.only(bottom: 16),
                         child: Row(
@@ -756,14 +818,47 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                                           ? null
                                           : Border.all(color: borderColor),
                                     ),
-                                    child: Text(
-                                      c["message"] ?? "",
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: isMe
-                                            ? Colors.white
-                                            : textPrimary,
-                                        fontSize: 13,
-                                      ),
+                                    child: Column(
+                                      crossAxisAlignment: isMe
+                                          ? CrossAxisAlignment.end
+                                          : CrossAxisAlignment.start,
+                                      children: [
+                                        // RENDER GAMBAR KALAU ADA
+                                        if (attachment != null &&
+                                            attachment.isNotEmpty)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              bottom: 8.0,
+                                            ),
+                                            child: ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              child: Image.network(
+                                                attachment,
+                                                width: 200,
+                                                fit: BoxFit.cover,
+                                                errorBuilder:
+                                                    (ctx, err, stack) =>
+                                                        const Icon(
+                                                          Icons.broken_image,
+                                                          color: Colors.white,
+                                                        ),
+                                              ),
+                                            ),
+                                          ),
+                                        // RENDER TEKS
+                                        if (c["message"] != null &&
+                                            c["message"].toString().isNotEmpty)
+                                          Text(
+                                            c["message"].toString(),
+                                            style: GoogleFonts.plusJakartaSans(
+                                              color: isMe
+                                                  ? Colors.white
+                                                  : textPrimary,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                   ),
                                 ],
@@ -784,50 +879,104 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                 border: Border(top: BorderSide(color: borderColor)),
               ),
               child: SafeArea(
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _commentController,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 14,
-                          color: textPrimary,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: "Write an internal note...",
-                          hintStyle: GoogleFonts.plusJakartaSans(
-                            color: textSecondary,
-                            fontSize: 14,
+                    // Preview Gambar sebelum dikirim
+                    if (_selectedImage != null)
+                      Stack(
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            height: 60,
+                            width: 60,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              image: DecorationImage(
+                                image: FileImage(_selectedImage!),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
                           ),
-                          filled: true,
-                          fillColor: fieldBg,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
+                          Positioned(
+                            right: -10,
+                            top: -10,
+                            child: IconButton(
+                              icon: const Icon(Icons.cancel, color: Colors.red),
+                              onPressed: () =>
+                                  setState(() => _selectedImage = null),
+                            ),
                           ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    GestureDetector(
-                      onTap: _sendComment,
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: const BoxDecoration(
-                          color: primary,
-                          shape: BoxShape.circle,
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _commentController,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              color: textPrimary,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: "Write an internal note...",
+                              hintStyle: GoogleFonts.plusJakartaSans(
+                                color: textSecondary,
+                                fontSize: 14,
+                              ),
+                              filled: true,
+                              fillColor: fieldBg,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(24),
+                                borderSide: BorderSide.none,
+                              ),
+                              // TOMBOL CLIP DI SINI
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _selectedImage != null
+                                      ? Icons.image
+                                      : Icons.attach_file,
+                                  color: _selectedImage != null
+                                      ? primary
+                                      : textSecondary,
+                                  size: 20,
+                                ),
+                                onPressed: _pickImage,
+                              ),
+                            ),
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.send_rounded,
-                          color: Colors.white,
-                          size: 20,
+                        const SizedBox(width: 12),
+                        GestureDetector(
+                          onTap: _isSendingComment ? null : _sendComment,
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: const BoxDecoration(
+                              color: primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: _isSendingComment
+                                ? const Padding(
+                                    padding: EdgeInsets.all(12.0),
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.send_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),

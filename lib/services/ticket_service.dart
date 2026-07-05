@@ -169,12 +169,14 @@ class TicketService {
     required String senderRole,
     required String senderName,
     required String message,
+    String? attachmentUrl, //tambah attachment
   }) async {
     await _client.from('ticket_comments').insert({
       'ticket_id': ticketId,
       'sender_role': senderRole,
       'sender_name': senderName,
       'message': message,
+      'attachment_url': attachmentUrl, // Kirim ke database
     });
   }
 

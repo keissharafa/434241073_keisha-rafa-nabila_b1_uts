@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -26,6 +27,12 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
   File? _selectedFile;
   String? _fileName;
   bool _isImage = false;
+
+  // ── STYLE GUIDE SEMANTIC COLORS ──
+  static const _primary = Color(0xFF6C63FF);
+  static const _danger = Color(0xFFF45B69);
+  static const _warning = Color(0xFFFF9F43);
+  static const _success = Color(0xFF21D07B);
 
   @override
   void dispose() {
@@ -129,19 +136,23 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
-    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final bgColor = isDark ? const Color(0xFF14142B) : const Color(0xFFEDEFF7);
+    final cardColor = isDark ? const Color(0xFF1F1B3A) : Colors.white;
     final textPrimary = isDark
-        ? const Color(0xFFF1F5F9)
-        : const Color(0xFF0F172A);
-    final textSecondary = isDark ? const Color(0xFF94A3B8) : Colors.grey[500]!;
-    final fieldBg = isDark ? const Color(0xFF1E293B) : const Color(0xFFEEF2FF);
-    final hintColor = isDark ? const Color(0xFF64748B) : Colors.grey[400]!;
+        ? const Color(0xFFF1F1FB)
+        : const Color(0xFF14142B);
+    final textSecondary = isDark
+        ? const Color(0xFFA0A0B8)
+        : const Color(0xFF92929D);
+    final fieldBg = isDark ? const Color(0xFF241F45) : const Color(0xFFF1E9FF);
+    final hintColor = isDark
+        ? const Color(0xFFA0A0B8)
+        : const Color(0xFF92929D);
     final borderColor = isDark
-        ? const Color(0xFF334155)
-        : const Color(0xFFE2E8F0);
-    final labelColor = const Color(0xFF94A3B8);
-    final navBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+        ? const Color(0xFF2E2A52)
+        : const Color(0xFFF0F1F6);
+    final labelColor = const Color(0xFF92929D);
+    final navBg = isDark ? const Color(0xFF1F1B3A) : Colors.white;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -160,7 +171,7 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                 height: 54,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
+                    backgroundColor: _primary,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -177,19 +188,20 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                             strokeWidth: 2,
                           ),
                         )
-                      : const Row(
+                      : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
                               "Submit Ticket",
-                              style: TextStyle(
+                              style: GoogleFonts.plusJakartaSans(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 0.2,
+                                color: Colors.white,
                               ),
                             ),
-                            SizedBox(width: 10),
-                            Icon(Icons.send_rounded, size: 18),
+                            const SizedBox(width: 10),
+                            const Icon(Icons.send_rounded, size: 18),
                           ],
                         ),
                 ),
@@ -197,7 +209,7 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
               const SizedBox(height: 8),
               Text(
                 "Max file size: 5MB. Photo or Document.",
-                style: TextStyle(
+                style: GoogleFonts.plusJakartaSans(
                   color: hintColor,
                   fontSize: 12,
                   fontStyle: FontStyle.italic,
@@ -222,8 +234,8 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E293B),
-                          borderRadius: BorderRadius.circular(10),
+                          color: const Color(0xFF14142B),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                         child: const Icon(
                           Icons.confirmation_num,
@@ -232,10 +244,10 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      const Text(
+                      Text(
                         "Concierge",
-                        style: TextStyle(
-                          color: Color(0xFF2563EB),
+                        style: GoogleFonts.plusJakartaSans(
+                          color: _primary,
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
                           letterSpacing: -0.3,
@@ -252,7 +264,7 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
               const SizedBox(height: 28),
               Text(
                 "Create Ticket",
-                style: TextStyle(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
                   color: textPrimary,
@@ -262,7 +274,7 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
               const SizedBox(height: 6),
               Text(
                 "Tell us what's happening. Our digital concierge will prioritize your request immediately.",
-                style: TextStyle(
+                style: GoogleFonts.plusJakartaSans(
                   color: textSecondary,
                   fontSize: 14,
                   height: 1.5,
@@ -287,17 +299,15 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
               Container(
                 decoration: BoxDecoration(
                   color: fieldBg,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 padding: const EdgeInsets.all(6),
                 child: Row(
                   children: ["Low", "Med", "High"].map((priority) {
                     final isSelected = selectedPriority == priority;
                     Color selectedTextColor = priority == "High"
-                        ? const Color(0xFFEF4444)
-                        : (priority == "Med"
-                              ? const Color(0xFFF97316)
-                              : const Color(0xFF16A34A));
+                        ? _danger
+                        : (priority == "Med" ? _warning : _success);
                     return Expanded(
                       child: GestureDetector(
                         onTap: () =>
@@ -307,15 +317,15 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? (isDark
-                                      ? const Color(0xFF334155)
+                                      ? const Color(0xFF1F1B3A)
                                       : Colors.white)
                                 : Colors.transparent,
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: Center(
                             child: Text(
                               priority,
-                              style: TextStyle(
+                              style: GoogleFonts.plusJakartaSans(
                                 color: isSelected
                                     ? selectedTextColor
                                     : labelColor,
@@ -354,14 +364,14 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: fieldBg,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFF2563EB)),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: _primary),
                   ),
                   child: Column(
                     children: [
                       if (_isImage)
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(10),
                           child: Image.file(
                             _selectedFile!,
                             height: 160,
@@ -375,12 +385,12 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                             const Icon(
                               Icons.insert_drive_file,
                               size: 48,
-                              color: Color(0xFF2563EB),
+                              color: _primary,
                             ),
                             const SizedBox(height: 12),
                             Text(
                               _fileName ?? "Document Selected",
-                              style: TextStyle(
+                              style: GoogleFonts.plusJakartaSans(
                                 color: textPrimary,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -397,12 +407,12 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                         }),
                         icon: const Icon(
                           Icons.delete_outline,
-                          color: Colors.red,
+                          color: _danger,
                           size: 18,
                         ),
-                        label: const Text(
+                        label: Text(
                           "Remove Attachment",
-                          style: TextStyle(color: Colors.red),
+                          style: GoogleFonts.plusJakartaSans(color: _danger),
                         ),
                       ),
                     ],
@@ -418,7 +428,7 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                           padding: const EdgeInsets.symmetric(vertical: 20),
                           decoration: BoxDecoration(
                             color: fieldBg,
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: borderColor),
                           ),
                           child: Column(
@@ -431,7 +441,7 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                               const SizedBox(height: 8),
                               Text(
                                 "Upload Photo",
-                                style: TextStyle(
+                                style: GoogleFonts.plusJakartaSans(
                                   color: textPrimary,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 13,
@@ -450,7 +460,7 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                           padding: const EdgeInsets.symmetric(vertical: 20),
                           decoration: BoxDecoration(
                             color: fieldBg,
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: borderColor),
                           ),
                           child: Column(
@@ -463,7 +473,7 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
                               const SizedBox(height: 8),
                               Text(
                                 "Upload File",
-                                style: TextStyle(
+                                style: GoogleFonts.plusJakartaSans(
                                   color: textPrimary,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 13,
@@ -487,10 +497,10 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
 
   Widget _fieldLabel(String label) => Text(
     label,
-    style: const TextStyle(
+    style: GoogleFonts.plusJakartaSans(
       fontSize: 11,
       fontWeight: FontWeight.w700,
-      color: Color(0xFF94A3B8),
+      color: const Color(0xFF92929D),
       letterSpacing: 1.0,
     ),
   );
@@ -506,14 +516,14 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
     return TextField(
       controller: controller,
       maxLines: maxLines,
-      style: TextStyle(fontSize: 15, color: textPrimary),
+      style: GoogleFonts.plusJakartaSans(fontSize: 15, color: textPrimary),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: hintColor, fontSize: 14),
+        hintStyle: GoogleFonts.plusJakartaSans(color: hintColor, fontSize: 14),
         filled: true,
         fillColor: fieldBg,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
         ),
       ),

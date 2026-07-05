@@ -60,11 +60,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // ── STYLE GUIDE PALETTE ──
-    const primary = Color(0xFF6C63FF); // Primary Indigo
-    const danger = Color(0xFFF45B69); // Semantic Danger
-    const warning = Color(0xFFFF9F43); // Semantic Warning
-    const success = Color(0xFF21D07B); // Semantic Success
+    const primary = Color(0xFF6C63FF);
+    const danger = Color(0xFFF45B69);
+    const warning = Color(0xFFFF9F43);
+    const success = Color(0xFF21D07B);
 
     final bgColor = isDark ? const Color(0xFF14142B) : const Color(0xFFEDEFF7);
     final cardColor = isDark ? const Color(0xFF1F1B3A) : Colors.white;
@@ -84,12 +83,19 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
     return Scaffold(
       backgroundColor: bgColor,
+      extendBody: true, // PENTING buat navbar floating
       body: SafeArea(
+        bottom: false,
         child: RefreshIndicator(
           onRefresh: _fetchStats,
           color: primary,
           child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.fromLTRB(
+              20,
+              16,
+              20,
+              100,
+            ), // Spasi bawah biar gak ketutup navbar
             children: [
               // ── TOP BAR ──
               Row(
@@ -180,7 +186,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
               const SizedBox(height: 24),
 
-              // ── HERO CARD: TOTAL TICKETS (gradient, like Balance Card) ──
+              // ── HERO CARD: TOTAL TICKETS ──
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
@@ -201,7 +207,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 ),
                 child: Stack(
                   children: [
-                    // decorative faint circle accent
                     Positioned(
                       right: -30,
                       top: -30,
@@ -244,15 +249,23 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           ],
                         ),
                         const SizedBox(height: 10),
-                        Text(
-                          totalTickets.toString(),
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 40,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: -1,
-                          ),
-                        ),
+                        isLoading
+                            ? const SizedBox(
+                                height: 48,
+                                width: 48,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                totalTickets.toString(),
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 40,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: -1,
+                                ),
+                              ),
                         const SizedBox(height: 20),
                         Container(
                           height: 1,
@@ -264,7 +277,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             Expanded(
                               child: _heroMiniStat(
                                 "OPEN",
-                                openTickets.toString(),
+                                isLoading ? "-" : openTickets.toString(),
                               ),
                             ),
                             Container(
@@ -276,7 +289,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             Expanded(
                               child: _heroMiniStat(
                                 "IN PROGRESS",
-                                pendingTickets.toString(),
+                                isLoading ? "-" : pendingTickets.toString(),
                               ),
                             ),
                           ],
@@ -289,7 +302,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
               const SizedBox(height: 16),
 
-              // ── RESOLVED STATISTICS CARD (bar chart) ──
+              // ── RESOLVED STATISTICS CARD ──
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -319,15 +332,17 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             ),
                           ),
                           const SizedBox(height: 6),
-                          Text(
-                            resolvedTickets.toString(),
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: textPrimary,
-                              letterSpacing: -1,
-                            ),
-                          ),
+                          isLoading
+                              ? const CircularProgressIndicator()
+                              : Text(
+                                  resolvedTickets.toString(),
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                    color: textPrimary,
+                                    letterSpacing: -1,
+                                  ),
+                                ),
                           const SizedBox(height: 4),
                           Text(
                             "All-time closed tickets",
@@ -359,7 +374,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
               const SizedBox(height: 24),
 
-              // ── BREAKDOWN: ANALYTICS-STYLE RING CARDS ──
+              // ── BREAKDOWN: RING CARDS ──
               Text(
                 "Breakdown",
                 style: GoogleFonts.plusJakartaSans(
@@ -415,7 +430,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
               const SizedBox(height: 24),
 
-              // ── QUICK ACTIONS (shortcut tiles, like Service grid) ──
+              // ── QUICK ACTIONS ──
               Text(
                 "Quick Actions",
                 style: GoogleFonts.plusJakartaSans(
@@ -454,8 +469,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           ),
         ),
       ),
+
+      // 👇 NAVBAR FLOATING FIX 👇
       bottomNavigationBar: Container(
-        margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         decoration: BoxDecoration(
           color: navBg,
           borderRadius: BorderRadius.circular(24),
@@ -476,8 +493,16 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             elevation: 0,
             selectedItemColor: primary,
             unselectedItemColor: textSecondary,
-            showSelectedLabels: false,
-            showUnselectedLabels: false,
+            showSelectedLabels: true,
+            showUnselectedLabels: true,
+            selectedLabelStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+            unselectedLabelStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
             onTap: (index) {
               if (index == 0) return;
               if (index == 1) {
@@ -510,20 +535,32 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             },
             items: const [
               BottomNavigationBarItem(
-                icon: Icon(Icons.grid_view_rounded),
-                label: "HOME",
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.grid_view_rounded, size: 24),
+                ),
+                label: "Home",
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.confirmation_num_outlined),
-                label: "TICKETS",
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.confirmation_num_outlined, size: 24),
+                ),
+                label: "Ticket",
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.notifications_outlined),
-                label: "NOTIFICATIONS",
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.notifications_none, size: 24),
+                ),
+                label: "Notif",
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline),
-                label: "PROFILE",
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.person_outline, size: 24),
+                ),
+                label: "Profile",
               ),
             ],
           ),

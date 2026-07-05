@@ -5,6 +5,7 @@ import 'helpdesk_dashboard_page.dart';
 import 'helpdesk_notification_page.dart';
 import 'helpdesk_profile_page.dart';
 import 'helpdesk_ticket_detail_page.dart';
+import 'helpdesk_create_ticket_page.dart'; // Import halaman create ticket baru
 
 class HelpdeskTicketPage extends StatefulWidget {
   final Function(bool) toggleTheme;
@@ -43,7 +44,6 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
       final prefs = await SharedPreferences.getInstance();
       _userName = prefs.getString('user_name') ?? "Alex Support";
 
-      // 👇 INI BAGIAN YANG DIPERBAIKI (assigned_to) 👇
       final response = await Supabase.instance.client
           .from('tickets')
           .select()
@@ -466,10 +466,29 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 80), // Biar gak ketutupan FAB
                   ],
                 ),
               ),
+      ),
+
+      // 👇 INI TOMBOL + (CREATE TICKET) UNTUK HELPDESK 👇
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final result = await Navigator.push<bool>(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  HelpdeskCreateTicketPage(toggleTheme: widget.toggleTheme),
+            ),
+          );
+          if (result == true) {
+            await _loadHelpdeskTickets(); // Refresh daftar setelah buat tiket
+          }
+        },
+        backgroundColor: const Color(0xFF2563EB),
+        elevation: 4,
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
 
       bottomNavigationBar: BottomNavigationBar(
