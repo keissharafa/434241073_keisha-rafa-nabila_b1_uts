@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/ticket_service.dart';
 import 'admin_dashboard_page.dart';
 import 'admin_ticket_page.dart';
 import 'admin_profile_page.dart';
+import 'admin_ticket_detail_page.dart'; // Import halaman detail admin
 
 class AdminNotificationPage extends StatefulWidget {
   final Function(bool) toggleTheme;
@@ -15,7 +17,7 @@ class AdminNotificationPage extends StatefulWidget {
 }
 
 class _AdminNotificationPageState extends State<AdminNotificationPage> {
-  int _selectedIndex = 2; // Index untuk Alerts/Notifications
+  int _selectedIndex = 2;
 
   final TicketService _ticketService = TicketService();
   List<Map<String, dynamic>> _notifications = [];
@@ -29,7 +31,6 @@ class _AdminNotificationPageState extends State<AdminNotificationPage> {
 
   Future<void> _loadNotifications() async {
     try {
-      // Mengambil notifikasi dengan target admin_helpdesk
       final data = await _ticketService.getNotifications(
         roleTarget: 'admin_helpdesk',
       );
@@ -96,7 +97,6 @@ class _AdminNotificationPageState extends State<AdminNotificationPage> {
     setState(() => _selectedIndex = index);
   }
 
-  // Menentukan Ikon berdasarkan tipe notifikasi
   IconData _getIconData(String? type) {
     switch (type) {
       case 'new_ticket':
@@ -111,22 +111,20 @@ class _AdminNotificationPageState extends State<AdminNotificationPage> {
     }
   }
 
-  // Menentukan Warna Ikon berdasarkan tipe notifikasi (mengikuti palette style guide)
   Color _getIconColor(String? type) {
     switch (type) {
       case 'new_ticket':
-        return const Color(0xFF6C63FF); // Primary Indigo
+        return const Color(0xFF6C63FF);
       case 'ticket_assigned':
-        return const Color(0xFFFF9F43); // Semantic Warning
+        return const Color(0xFFFF9F43);
       case 'ticket_update':
       case 'status_update':
-        return const Color(0xFF21D07B); // Semantic Success
+        return const Color(0xFF21D07B);
       default:
-        return const Color(0xFF92929D); // Text Secondary
+        return const Color(0xFF92929D);
     }
   }
 
-  // Menentukan Warna Background Ikon berdasarkan tipe notifikasi
   Color _getIconBgColor(String? type, bool isDark) {
     if (isDark) {
       switch (type) {
@@ -158,7 +156,6 @@ class _AdminNotificationPageState extends State<AdminNotificationPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // ── STYLE GUIDE PALETTE (sama dengan Dashboard) ──
     const primary = Color(0xFF6C63FF);
 
     final bgColor = isDark ? const Color(0xFF14142B) : const Color(0xFFEDEFF7);
@@ -179,11 +176,12 @@ class _AdminNotificationPageState extends State<AdminNotificationPage> {
 
     return Scaffold(
       backgroundColor: bgColor,
+      extendBody: true, // Wajib untuk floating navbar
       body: SafeArea(
+        bottom: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // HEADER CUSTOM
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
               child: Row(
@@ -218,7 +216,6 @@ class _AdminNotificationPageState extends State<AdminNotificationPage> {
                   ),
                   TextButton(
                     onPressed: () {
-                      // Fitur Mark All as Read (Visual Only untuk saat ini)
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text("All alerts marked as read."),
@@ -253,7 +250,9 @@ class _AdminNotificationPageState extends State<AdminNotificationPage> {
 
             Expanded(
               child: _isLoading
-                  ? Center(child: CircularProgressIndicator(color: primary))
+                  ? const Center(
+                      child: CircularProgressIndicator(color: primary),
+                    )
                   : RefreshIndicator(
                       onRefresh: _loadNotifications,
                       color: primary,
@@ -298,8 +297,8 @@ class _AdminNotificationPageState extends State<AdminNotificationPage> {
                                 20,
                                 10,
                                 20,
-                                20,
-                              ),
+                                100,
+                              ), // Spasi bawah ditambah
                               itemCount: _notifications.length,
                               itemBuilder: (context, index) {
                                 final notif = _notifications[index];
@@ -307,112 +306,211 @@ class _AdminNotificationPageState extends State<AdminNotificationPage> {
                                 final notifType =
                                     notif['notification_type'] as String?;
 
-                                return Container(
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: cardColor,
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: isDark
-                                        ? Border.all(color: borderColor)
-                                        : null,
-                                    boxShadow: isDark
-                                        ? []
-                                        : [
-                                            BoxShadow(
-                                              color: shadowColor,
-                                              blurRadius: 20,
-                                              offset: const Offset(0, 4),
-                                            ),
-                                          ],
-                                  ),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        width: 48,
-                                        height: 48,
-                                        decoration: BoxDecoration(
-                                          color: _getIconBgColor(
-                                            notifType,
-                                            isDark,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            14,
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          _getIconData(notifType),
-                                          color: _getIconColor(notifType),
-                                          size: 24,
+                                return GestureDetector(
+                                  onTap: () async {
+                                    final ticketId = notif['ticket_id'];
+                                    if (ticketId == null) return;
+
+                                    // Tandai sebagai dibaca di database
+                                    Supabase.instance.client
+                                        .from('notifications')
+                                        .update({'is_read': true})
+                                        .eq('id', notif['id'])
+                                        .then((_) {}); // Fire & forget
+
+                                    setState(() => notif['is_read'] = true);
+
+                                    // Tampilkan Loading
+                                    showDialog(
+                                      context: context,
+                                      barrierDismissible: false,
+                                      builder: (_) => const Center(
+                                        child: CircularProgressIndicator(
+                                          color: primary,
                                         ),
                                       ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    notif['title'] ??
-                                                        "Notification",
+                                    );
+
+                                    try {
+                                      // Tarik data tiket full dari Supabase
+                                      final response = await Supabase
+                                          .instance
+                                          .client
+                                          .from('tickets')
+                                          .select()
+                                          .eq('id', ticketId)
+                                          .single();
+
+                                      if (!mounted) return;
+                                      Navigator.pop(context); // Tutup loading
+
+                                      // Map data tiket sebelum dilempar ke halaman detail
+                                      final mappedTicket = {
+                                        "dbId": response["id"],
+                                        "id":
+                                            response["ticket_code"] ??
+                                            "#TK-0000",
+                                        "title":
+                                            response["title"] ?? "Untitled",
+                                        "description":
+                                            response["description"] ??
+                                            "No description",
+                                        "category":
+                                            response["category"] ??
+                                            "Technical Support",
+                                        "reporter":
+                                            response["reporter"] ??
+                                            "Unknown User",
+                                        "status": response["status"] ?? "OPEN",
+                                        "priority":
+                                            response["priority"] ?? "LOW",
+                                        "requestedPriority":
+                                            response["requested_priority"] ??
+                                            "-",
+                                        "assignedTo":
+                                            response["assigned_to"] ??
+                                            "Unassigned",
+                                        "time": response["created_at"],
+                                        "strikethrough":
+                                            response["strikethrough"] ?? false,
+                                        "attachment_url":
+                                            response["attachment_url"],
+                                      };
+
+                                      // Navigasi ke halaman detail
+                                      await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => AdminTicketDetailPage(
+                                            ticket: mappedTicket,
+                                            toggleTheme: widget.toggleTheme,
+                                          ),
+                                        ),
+                                      );
+
+                                      // Refresh notifikasi setelah kembali
+                                      _loadNotifications();
+                                    } catch (e) {
+                                      if (!mounted) return;
+                                      Navigator.pop(context);
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text("Ticket not found: $e"),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  child: Container(
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: cardColor,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: isDark
+                                          ? Border.all(color: borderColor)
+                                          : null,
+                                      boxShadow: isDark
+                                          ? []
+                                          : [
+                                              BoxShadow(
+                                                color: shadowColor,
+                                                blurRadius: 20,
+                                                offset: const Offset(0, 4),
+                                              ),
+                                            ],
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Container(
+                                          width: 48,
+                                          height: 48,
+                                          decoration: BoxDecoration(
+                                            color: _getIconBgColor(
+                                              notifType,
+                                              isDark,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            _getIconData(notifType),
+                                            color: _getIconColor(notifType),
+                                            size: 24,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(
+                                                      notif['title'] ??
+                                                          "Notification",
+                                                      style:
+                                                          GoogleFonts.plusJakartaSans(
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            fontSize: 15,
+                                                            color: textPrimary,
+                                                          ),
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    _timeAgo(
+                                                      notif['created_at'],
+                                                    ),
                                                     style:
                                                         GoogleFonts.plusJakartaSans(
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          fontSize: 15,
-                                                          color: textPrimary,
-                                                        ),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  _timeAgo(notif['created_at']),
-                                                  style:
-                                                      GoogleFonts.plusJakartaSans(
-                                                        fontSize: 11,
-                                                        color: textSecondary,
-                                                      ),
-                                                ),
-                                                if (!isRead) ...[
-                                                  const SizedBox(width: 8),
-                                                  Container(
-                                                    width: 8,
-                                                    height: 8,
-                                                    decoration:
-                                                        const BoxDecoration(
-                                                          color: primary,
-                                                          shape:
-                                                              BoxShape.circle,
+                                                          fontSize: 11,
+                                                          color: textSecondary,
                                                         ),
                                                   ),
+                                                  if (!isRead) ...[
+                                                    const SizedBox(width: 8),
+                                                    Container(
+                                                      width: 8,
+                                                      height: 8,
+                                                      decoration:
+                                                          const BoxDecoration(
+                                                            color: primary,
+                                                            shape:
+                                                                BoxShape.circle,
+                                                          ),
+                                                    ),
+                                                  ],
                                                 ],
-                                              ],
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              notif['message'] ?? "",
-                                              style:
-                                                  GoogleFonts.plusJakartaSans(
-                                                    fontSize: 13,
-                                                    color: textSecondary,
-                                                    height: 1.4,
-                                                  ),
-                                            ),
-                                          ],
+                                              ),
+                                              const SizedBox(height: 6),
+                                              Text(
+                                                notif['message'] ?? "",
+                                                style:
+                                                    GoogleFonts.plusJakartaSans(
+                                                      fontSize: 13,
+                                                      color: textSecondary,
+                                                      height: 1.4,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 );
                               },
@@ -423,7 +521,7 @@ class _AdminNotificationPageState extends State<AdminNotificationPage> {
         ),
       ),
       bottomNavigationBar: Container(
-        margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         decoration: BoxDecoration(
           color: navBg,
           borderRadius: BorderRadius.circular(24),
@@ -445,24 +543,44 @@ class _AdminNotificationPageState extends State<AdminNotificationPage> {
             elevation: 0,
             selectedItemColor: primary,
             unselectedItemColor: textSecondary,
-            showSelectedLabels: false,
-            showUnselectedLabels: false,
+            showSelectedLabels: true,
+            showUnselectedLabels: true,
+            selectedLabelStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+            unselectedLabelStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
             items: const [
               BottomNavigationBarItem(
-                icon: Icon(Icons.grid_view_rounded),
-                label: "HOME",
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.grid_view_rounded, size: 24),
+                ),
+                label: "Home",
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.confirmation_num_outlined),
-                label: "TICKETS",
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.confirmation_num_outlined, size: 24),
+                ),
+                label: "Ticket",
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.notifications_outlined),
-                label: "ALERTS",
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.notifications_none, size: 24),
+                ),
+                label: "Notif",
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline),
-                label: "PROFILE",
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.person_outline, size: 24),
+                ),
+                label: "Profile",
               ),
             ],
           ),

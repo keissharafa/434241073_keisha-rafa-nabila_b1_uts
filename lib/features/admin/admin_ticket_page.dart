@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/ticket_service.dart';
 import 'admin_dashboard_page.dart';
-
 import 'admin_ticket_detail_page.dart';
 import 'admin_notification_page.dart';
 import 'admin_profile_page.dart';
+import 'admin_create_ticket_page.dart'; // Import halaman create tiket admin
 
 class AdminTicketPage extends StatefulWidget {
   final Function(bool) toggleTheme;
@@ -61,6 +61,7 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
             "assignedTo": ticket["assigned_to"] ?? "Unassigned",
             "time": _timeAgo(ticket["created_at"]),
             "strikethrough": ticket["strikethrough"] ?? false,
+            "attachment_url": ticket["attachment_url"], // Pastikan di-pass juga
           };
         }).toList();
 
@@ -122,7 +123,6 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
         .length;
   }
 
-  // 👇 Navigasi yang sudah diperbaiki
   void _onNavTap(int index) {
     if (index == _selectedIndex) return;
 
@@ -248,17 +248,21 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
 
     return Scaffold(
       backgroundColor: bgColor,
+      extendBody: true, // Untuk floating navbar
       body: SafeArea(
+        bottom: false,
         child: isLoading
-            ? Center(child: CircularProgressIndicator(color: _primary))
+            ? const Center(child: CircularProgressIndicator(color: _primary))
             : RefreshIndicator(
                 onRefresh: _loadAdminTickets,
                 color: _primary,
                 child: ListView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(
+                    20,
+                    16,
+                    20,
+                    100,
+                  ), // Spasi bawah ditambah
                   children: [
                     // HEADER
                     Row(
@@ -344,23 +348,89 @@ class _AdminTicketPageState extends State<AdminTicketPage> {
 
                     const SizedBox(height: 24),
 
-                    Text(
-                      "Global Ticket Queue",
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: textPrimary,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      "Review and assign tickets to helpdesk agents.",
-                      style: GoogleFonts.plusJakartaSans(
-                        color: textSecondary,
-                        fontSize: 13,
-                        height: 1.4,
-                      ),
+                    // HEADER JUDUL & TOMBOL CREATE TICKET
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Global Ticket Queue",
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: textPrimary,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "Review and assign tickets to helpdesk agents.",
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: textSecondary,
+                                  fontSize: 13,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () async {
+                            // Navigasi ke halaman create ticket admin
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => AdminCreateTicketPage(
+                                  toggleTheme: widget.toggleTheme,
+                                ),
+                              ),
+                            );
+                            // Refresh data kalau tiket berhasil dibuat
+                            if (result == true) {
+                              _loadAdminTickets();
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _primary,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: _primary.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.add,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  "Create",
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
 
                     const SizedBox(height: 20),

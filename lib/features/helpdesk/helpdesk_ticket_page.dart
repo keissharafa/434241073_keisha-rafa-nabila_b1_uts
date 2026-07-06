@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'helpdesk_dashboard_page.dart';
@@ -26,6 +27,19 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
   List<Map<String, dynamic>> _tickets = [];
   bool isLoading = true;
   String _userName = "";
+
+  // ---- Style guide constants ----
+  static const _bgLight = Color(0xFFEDEFF7);
+  static const _surfaceLight = Color(0xFFFFFFFF);
+  static const _primary = Color(0xFF6C63FF);
+  static const _textPrimaryLight = Color(0xFF14142B);
+  static const _textSecondaryLight = Color(0xFF92929D);
+  static const _fieldBgLight = Color(
+    0xFFF1E9FF,
+  ); // pay-category pastel, dipakai utk search/dropdown
+  static const _success = Color(0xFF21D07B);
+  static const _warning = Color(0xFFFF9F43);
+  static const _danger = Color(0xFFF45B69);
 
   @override
   void initState() {
@@ -159,51 +173,53 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
     setState(() => _selectedIndex = index);
   }
 
+  // ---- Status: warna text solid dari palette semantic ----
   Color _statusColor(String status) {
     switch (status.toUpperCase()) {
       case "OPEN":
-        return const Color(0xFFEF4444);
+        return _danger;
       case "PENDING":
-        return const Color(0xFFF97316);
+        return _warning;
       case "IN PROGRESS":
-        return const Color(0xFF2563EB);
+        return _primary;
       case "RESOLVED":
       case "CLOSED":
-        return const Color(0xFF16A34A);
+        return _success;
       default:
-        return const Color(0xFF475569);
+        return _textSecondaryLight;
     }
   }
 
+  // ---- Status: background pastel (versi soft dari warna di atas) ----
   Color _statusBg(String status) {
     switch (status.toUpperCase()) {
       case "OPEN":
-        return const Color(0xFFFEE2E2);
+        return const Color(0xFFFCE9EB);
       case "PENDING":
-        return const Color(0xFFFFF7ED);
+        return const Color(0xFFFFF3E6);
       case "IN PROGRESS":
-        return const Color(0xFFEFF6FF);
+        return const Color(0xFFEEECFF);
       case "RESOLVED":
       case "CLOSED":
-        return const Color(0xFFDCFCE7);
+        return const Color(0xFFE3FAEC);
       default:
-        return const Color(0xFFF1F5F9);
+        return const Color(0xFFF0F1F6);
     }
   }
 
   Color _priorityColor(String p) {
     switch (p.toUpperCase()) {
       case "URGENT":
-        return const Color(0xFFDC2626);
+        return const Color(0xFFE0374B);
       case "HIGH":
-        return const Color(0xFFEF4444);
+        return _danger;
       case "MED":
       case "MEDIUM":
-        return const Color(0xFFF97316);
+        return _warning;
       case "LOW":
-        return const Color(0xFF16A34A);
+        return _success;
       default:
-        return const Color(0xFF475569);
+        return _textSecondaryLight;
     }
   }
 
@@ -227,57 +243,56 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
-    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final textPrimary = isDark
-        ? const Color(0xFFF1F5F9)
-        : const Color(0xFF0F172A);
-    final textSecondary = isDark ? const Color(0xFF94A3B8) : Colors.grey[500]!;
-    final fieldBg = isDark ? const Color(0xFF0F172A) : const Color(0xFFEEF2FF);
-    final borderColor = isDark
-        ? const Color(0xFF334155)
-        : const Color(0xFFE2E8F0);
-    final dropdownBg = isDark
-        ? const Color(0xFF1E293B)
-        : const Color(0xFFEEF2FF);
+    final bgColor = isDark ? const Color(0xFF14142B) : _bgLight;
+    final cardColor = isDark ? const Color(0xFF1F1F3A) : _surfaceLight;
+    final navBg = isDark ? const Color(0xFF1F1F3A) : _surfaceLight;
+    final textPrimary = isDark ? const Color(0xFFF4F4FB) : _textPrimaryLight;
+    final textSecondary = isDark
+        ? const Color(0xFFA0A0B8)
+        : _textSecondaryLight;
+    final fieldBg = isDark ? const Color(0xFF2A2A55) : _fieldBgLight;
+    final shadowColor = isDark
+        ? Colors.black.withOpacity(0.3)
+        : const Color(0xFF6C63FF).withOpacity(0.07);
 
     return Scaffold(
       backgroundColor: bgColor,
+      extendBody: true,
       body: SafeArea(
+        bottom: false,
         child: isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator(color: _primary))
             : RefreshIndicator(
                 onRefresh: _loadHelpdeskTickets,
+                color: _primary,
                 child: ListView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
-                  ),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 110),
                   children: [
-                    // HEADER
+                    // ---- Top App Bar (minimal, no elevation) ----
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Row(
                           children: [
                             Container(
-                              width: 40,
-                              height: 40,
+                              width: 38,
+                              height: 38,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1E293B),
-                                borderRadius: BorderRadius.circular(10),
+                                color: _primary,
+                                borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Icon(
-                                Icons.confirmation_num,
+                                Icons.confirmation_num_rounded,
                                 color: Colors.white,
-                                size: 20,
+                                size: 18,
                               ),
                             ),
                             const SizedBox(width: 10),
-                            const Text(
+                            Text(
                               "Concierge",
-                              style: TextStyle(
-                                color: Color(0xFF2563EB),
+                              style: GoogleFonts.plusJakartaSans(
+                                color: _primary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
                                 letterSpacing: -0.3,
@@ -290,15 +305,19 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                           height: 38,
                           decoration: BoxDecoration(
                             color: cardColor,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: borderColor),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: shadowColor,
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
                           child: Icon(
                             Icons.notifications_outlined,
-                            color: isDark
-                                ? const Color(0xFF94A3B8)
-                                : const Color(0xFF475569),
-                            size: 20,
+                            color: textSecondary,
+                            size: 18,
                           ),
                         ),
                       ],
@@ -308,17 +327,17 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
 
                     Text(
                       "Ticket Command Center",
-                      style: TextStyle(
-                        fontSize: 24,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: textPrimary,
-                        letterSpacing: -0.5,
+                        letterSpacing: -0.3,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       "Your assigned tasks.",
-                      style: TextStyle(
+                      style: GoogleFonts.plusJakartaSans(
                         color: textSecondary,
                         fontSize: 13,
                         height: 1.4,
@@ -327,55 +346,71 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
 
                     const SizedBox(height: 20),
 
-                    // MINI STATS
+                    // ---- MINI STATS CARD ----
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
-                        vertical: 16,
+                        vertical: 18,
                       ),
                       decoration: BoxDecoration(
                         color: cardColor,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: borderColor),
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: shadowColor,
+                            blurRadius: 24,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                       ),
                       child: Row(
                         children: [
                           _miniStat(
                             "ACTIVE TICKETS",
                             _activeTicketCount.toString(),
-                            const Color(0xFF2563EB),
+                            _primary,
+                            textSecondary,
                           ),
                           Container(
                             width: 1,
                             height: 40,
-                            color: borderColor,
+                            color: isDark
+                                ? Colors.white.withOpacity(0.08)
+                                : const Color(0xFFF0F1F6),
                             margin: const EdgeInsets.symmetric(horizontal: 20),
                           ),
                           _miniStat(
                             "AVG. RESPONSE",
                             "14m",
-                            const Color(0xFFF97316),
+                            _warning,
+                            textSecondary,
                           ),
                         ],
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
-                    // FILTER CARD
+                    // ---- FILTER CARD ----
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
                         color: cardColor,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: borderColor),
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: shadowColor,
+                            blurRadius: 24,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             "SEARCH TICKETS",
-                            style: TextStyle(
+                            style: GoogleFonts.plusJakartaSans(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: textSecondary,
@@ -386,12 +421,20 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                           TextField(
                             controller: _searchController,
                             onChanged: (_) => setState(() {}),
-                            style: TextStyle(fontSize: 14, color: textPrimary),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              color: textPrimary,
+                            ),
                             decoration: InputDecoration(
                               hintText: "ID, Subject...",
-                              hintStyle: TextStyle(
+                              hintStyle: GoogleFonts.plusJakartaSans(
                                 color: textSecondary,
                                 fontSize: 14,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.search_rounded,
+                                color: textSecondary,
+                                size: 20,
                               ),
                               filled: true,
                               fillColor: fieldBg,
@@ -400,7 +443,7 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                                 horizontal: 14,
                               ),
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(14),
                                 borderSide: BorderSide.none,
                               ),
                             ),
@@ -417,7 +460,7 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                               "RESOLVED",
                               "CLOSED",
                             ],
-                            bg: dropdownBg,
+                            bg: fieldBg,
                             textColor: textPrimary,
                             onChanged: (v) {
                               if (v == null) return;
@@ -425,7 +468,7 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                             },
                           ),
 
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 12),
 
                           _dropdown(
                             value: _selectedPriority,
@@ -436,7 +479,7 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                               "MEDIUM",
                               "LOW",
                             ],
-                            bg: dropdownBg,
+                            bg: fieldBg,
                             textColor: textPrimary,
                             onChanged: (v) {
                               if (v == null) return;
@@ -453,6 +496,8 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                       _emptyState(
                         cardColor: cardColor,
                         textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                        shadowColor: shadowColor,
                       ),
 
                     ..._filteredTickets.map(
@@ -461,89 +506,168 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                         cardColor,
                         textPrimary,
                         textSecondary,
-                        borderColor,
-                        isDark,
+                        shadowColor,
                       ),
                     ),
-
-                    const SizedBox(height: 80), // Biar gak ketutupan FAB
                   ],
                 ),
               ),
       ),
 
-      // 👇 INI TOMBOL + (CREATE TICKET) UNTUK HELPDESK 👇
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final result = await Navigator.push<bool>(
-            context,
-            MaterialPageRoute(
-              builder: (_) =>
-                  HelpdeskCreateTicketPage(toggleTheme: widget.toggleTheme),
+      // ---- FAB (Create Ticket) ----
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: _primary.withOpacity(0.35),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
-          );
-          if (result == true) {
-            await _loadHelpdeskTickets(); // Refresh daftar setelah buat tiket
-          }
-        },
-        backgroundColor: const Color(0xFF2563EB),
-        elevation: 4,
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
+          ],
+        ),
+        child: FloatingActionButton(
+          onPressed: () async {
+            final result = await Navigator.push<bool>(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>
+                    HelpdeskCreateTicketPage(toggleTheme: widget.toggleTheme),
+              ),
+            );
+            if (result == true) {
+              await _loadHelpdeskTickets(); // Refresh daftar setelah buat tiket
+            }
+          },
+          backgroundColor: _primary,
+          elevation: 0,
+          child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+        ),
       ),
 
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onNavTap,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF2563EB),
-        unselectedItemColor: const Color(0xFF94A3B8),
-        selectedLabelStyle: const TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
+      // ---- Floating Bottom Nav (konsisten sama dashboard) ----
+      bottomNavigationBar: Container(
+        margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        decoration: BoxDecoration(
+          color: navBg,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
-        unselectedLabelStyle: const TextStyle(fontSize: 10, letterSpacing: 0.5),
-        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-        elevation: 8,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.grid_view_rounded),
-            label: "HOME",
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BottomNavigationBar(
+            currentIndex: _selectedIndex,
+            onTap: _onNavTap,
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: navBg,
+            elevation: 0,
+            selectedItemColor: _primary,
+            unselectedItemColor: textSecondary,
+            showSelectedLabels: true,
+            showUnselectedLabels: true,
+            selectedLabelStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+            unselectedLabelStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+            items: const [
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.grid_view_rounded, size: 24),
+                ),
+                label: "Home",
+              ),
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.confirmation_num_outlined, size: 24),
+                ),
+                label: "Ticket",
+              ),
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.notifications_none, size: 24),
+                ),
+                label: "Notif",
+              ),
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.person_outline, size: 24),
+                ),
+                label: "Profile",
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.confirmation_num_outlined),
-            label: "TICKETS",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_outlined),
-            label: "NOTIFICATIONS",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: "PROFILE",
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _emptyState({required Color cardColor, required Color textPrimary}) {
+  Widget _emptyState({
+    required Color cardColor,
+    required Color textPrimary,
+    required Color textSecondary,
+    required Color shadowColor,
+  }) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: shadowColor,
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          const SizedBox(height: 10),
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: _fieldBgLight,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.inbox_rounded,
+              color: Color(0xFF8B5CF6),
+              size: 24,
+            ),
+          ),
+          const SizedBox(height: 14),
           Text(
             "No tickets assigned",
-            style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold),
+            style: GoogleFonts.plusJakartaSans(
+              color: textPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 4),
+          Text(
+            "Try adjusting your filters.",
+            style: GoogleFonts.plusJakartaSans(
+              color: textSecondary,
+              fontSize: 12,
+            ),
+          ),
         ],
       ),
     );
@@ -554,8 +678,7 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
     Color cardColor,
     Color textPrimary,
     Color textSecondary,
-    Color borderColor,
-    bool isDark,
+    Color shadowColor,
   ) {
     final isStrike = t["strikethrough"] == true;
     final status = (t["status"] ?? "OPEN").toString();
@@ -581,8 +704,14 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: cardColor,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: borderColor),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -590,44 +719,66 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Leading icon container (rounded-square pastel, konsisten sama style guide)
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(6),
+                    color: _fieldBgLight,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(
-                    t["id"] ?? "#TK-0000",
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2563EB),
-                    ),
+                  child: const Icon(
+                    Icons.confirmation_number_outlined,
+                    color: Color(0xFF8B5CF6),
+                    size: 18,
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    t["title"] ?? "Untitled",
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: isStrike ? textSecondary : textPrimary,
-                      decoration: isStrike
-                          ? TextDecoration.lineThrough
-                          : TextDecoration.none,
-                      height: 1.3,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            t["id"] ?? "#TK-0000",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: _primary,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            t["time"] ?? "",
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              color: textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        t["title"] ?? "Untitled",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: isStrike ? textSecondary : textPrimary,
+                          decoration: isStrike
+                              ? TextDecoration.lineThrough
+                              : TextDecoration.none,
+                          height: 1.3,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Container(
@@ -641,7 +792,7 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                   ),
                   child: Text(
                     status,
-                    style: TextStyle(
+                    style: GoogleFonts.plusJakartaSans(
                       color: _statusColor(status),
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -652,7 +803,7 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                 const Spacer(),
                 Text(
                   "${_priorityPrefix(priority)}$priority",
-                  style: TextStyle(
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: _priorityColor(priority),
@@ -666,7 +817,12 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
     );
   }
 
-  Widget _miniStat(String label, String value, Color color) {
+  Widget _miniStat(
+    String label,
+    String value,
+    Color color,
+    Color textSecondary,
+  ) {
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -682,13 +838,15 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: color,
-                  letterSpacing: 0.5,
+              Expanded(
+                child: Text(
+                  label,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: textSecondary,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ],
@@ -696,7 +854,7 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
           const SizedBox(height: 6),
           Text(
             value,
-            style: TextStyle(
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 26,
               fontWeight: FontWeight.bold,
               color: color,
@@ -719,7 +877,7 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
@@ -727,11 +885,11 @@ class _HelpdeskTicketPageState extends State<HelpdeskTicketPage> {
           isExpanded: true,
           icon: const Icon(
             Icons.keyboard_arrow_down_rounded,
-            color: Color(0xFF475569),
+            color: Color(0xFF8B5CF6),
           ),
-          style: TextStyle(fontSize: 14, color: textColor),
+          style: GoogleFonts.plusJakartaSans(fontSize: 14, color: textColor),
           dropdownColor: bg,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           items: items
               .map((item) => DropdownMenuItem(value: item, child: Text(item)))
               .toList(),

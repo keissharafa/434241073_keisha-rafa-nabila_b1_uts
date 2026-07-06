@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'helpdesk_dashboard_page.dart';
 import 'helpdesk_ticket_page.dart';
 import 'helpdesk_notification_page.dart';
@@ -46,6 +47,19 @@ class HelpdeskProfilePage extends StatefulWidget {
 }
 
 class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
+  // ---- Style guide constants ----
+  static const _bgLight = Color(0xFFEDEFF7);
+  static const _surfaceLight = Color(0xFFFFFFFF);
+  static const _primary = Color(0xFF6C63FF);
+  static const _textPrimaryLight = Color(0xFF14142B);
+  static const _textSecondaryLight = Color(0xFF92929D);
+  static const _fieldBgLight = Color(0xFFF1E9FF); // pastel "Pay" category
+  static const _payIcon = Color(0xFF8B5CF6);
+  static const _success = Color(0xFF21D07B);
+  static const _successBg = Color(0xFFE3FAEC);
+  static const _danger = Color(0xFFF45B69);
+  static const _dangerBg = Color(0xFFFCE9EB);
+
   // ── Bottom-nav ──────────────────────────────────────────────────────────────
   void _onNavTap(int index) {
     if (index == 3) return;
@@ -90,18 +104,18 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
     bool obscureConfirm = true;
     bool isLoading = false;
 
-    final sheetBg = isDarkSheet ? const Color(0xFF1E293B) : Colors.white;
+    final sheetBg = isDarkSheet ? const Color(0xFF1F1F3A) : _surfaceLight;
     final labelColor = isDarkSheet
-        ? const Color(0xFFF1F5F9)
-        : const Color(0xFF0F172A);
-    final fieldBg = isDarkSheet
-        ? const Color(0xFF0F172A)
-        : const Color(0xFFF1F5F9);
-    final hintColor = isDarkSheet ? const Color(0xFF64748B) : Colors.grey[400]!;
-    final iconColor = isDarkSheet ? const Color(0xFF64748B) : Colors.grey[400]!;
+        ? const Color(0xFFF4F4FB)
+        : _textPrimaryLight;
+    final fieldBg = isDarkSheet ? const Color(0xFF2A2A55) : _fieldBgLight;
+    final hintColor = isDarkSheet
+        ? const Color(0xFFA0A0B8)
+        : _textSecondaryLight;
+    final iconColor = isDarkSheet ? const Color(0xFFA0A0B8) : _payIcon;
     final subtitleColor = isDarkSheet
-        ? const Color(0xFF94A3B8)
-        : Colors.grey[500]!;
+        ? const Color(0xFFA0A0B8)
+        : _textSecondaryLight;
 
     showModalBottomSheet(
       context: context,
@@ -129,8 +143,8 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
                     height: 4,
                     decoration: BoxDecoration(
                       color: isDarkSheet
-                          ? const Color(0xFF334155)
-                          : const Color(0xFFE2E8F0),
+                          ? Colors.white.withOpacity(0.12)
+                          : const Color(0xFFF0F1F6),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -138,17 +152,20 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
                 const SizedBox(height: 20),
                 Text(
                   'Reset Password',
-                  style: TextStyle(
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: labelColor,
-                    letterSpacing: -0.4,
+                    letterSpacing: -0.3,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Enter your current and new password below.',
-                  style: TextStyle(fontSize: 13, color: subtitleColor),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    color: subtitleColor,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 _sheetLabel('Current Password', labelColor),
@@ -194,14 +211,15 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
                 const SizedBox(height: 28),
                 SizedBox(
                   width: double.infinity,
-                  height: 52,
+                  height: 54,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2563EB),
+                      backgroundColor: _primary,
                       foregroundColor: Colors.white,
                       elevation: 0,
+                      shadowColor: Colors.transparent,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
                     onPressed: isLoading
@@ -221,9 +239,9 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
                               strokeWidth: 2,
                             ),
                           )
-                        : const Text(
+                        : Text(
                             'Reset Password',
-                            style: TextStyle(
+                            style: GoogleFonts.plusJakartaSans(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
                             ),
@@ -240,13 +258,13 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
 
   // ── Success dialog ──────────────────────────────────────────────────────────
   void _showSuccessDialog(bool isDarkDialog) {
-    final dialogBg = isDarkDialog ? const Color(0xFF1E293B) : Colors.white;
+    final dialogBg = isDarkDialog ? const Color(0xFF1F1F3A) : _surfaceLight;
     final titleColor = isDarkDialog
-        ? const Color(0xFFF1F5F9)
-        : const Color(0xFF0F172A);
+        ? const Color(0xFFF4F4FB)
+        : _textPrimaryLight;
     final bodyColor = isDarkDialog
-        ? const Color(0xFF94A3B8)
-        : Colors.grey[500]!;
+        ? const Color(0xFFA0A0B8)
+        : _textSecondaryLight;
 
     showDialog(
       context: context,
@@ -263,12 +281,12 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
                 width: 72,
                 height: 72,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDCFCE7),
+                  color: _successBg,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Icon(
                   Icons.check_rounded,
-                  color: Color(0xFF16A34A),
+                  color: _success,
                   size: 36,
                 ),
               ),
@@ -276,7 +294,7 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
               Text(
                 'Password Reset Successful',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: titleColor,
@@ -288,25 +306,33 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
                 'Your password has been updated successfully. '
                 'Please use your new password the next time you log in.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: bodyColor, height: 1.5),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  color: bodyColor,
+                  height: 1.5,
+                ),
               ),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
-                height: 48,
+                height: 50,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
+                    backgroundColor: _primary,
                     foregroundColor: Colors.white,
                     elevation: 0,
+                    shadowColor: Colors.transparent,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                   onPressed: () => Navigator.pop(context),
-                  child: const Text(
+                  child: Text(
                     'Got it',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
                   ),
                 ),
               ),
@@ -320,7 +346,11 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
   // ── Helpers ─────────────────────────────────────────────────────────────────
   Widget _sheetLabel(String text, Color color) => Text(
     text,
-    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: color),
+    style: GoogleFonts.plusJakartaSans(
+      fontSize: 14,
+      fontWeight: FontWeight.w500,
+      color: color,
+    ),
   );
 
   Widget _sheetTextField({
@@ -335,11 +365,11 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
   }) => TextField(
     controller: controller,
     obscureText: obscure,
-    style: TextStyle(fontSize: 14, color: textColor),
+    style: GoogleFonts.plusJakartaSans(fontSize: 14, color: textColor),
     decoration: InputDecoration(
       hintText: hint,
-      hintStyle: TextStyle(color: hintColor, fontSize: 14),
-      prefixIcon: Icon(Icons.lock_outline, color: iconColor, size: 20),
+      hintStyle: GoogleFonts.plusJakartaSans(color: hintColor, fontSize: 14),
+      prefixIcon: Icon(Icons.lock_outline_rounded, color: iconColor, size: 20),
       suffixIcon: GestureDetector(
         onTap: onToggle,
         child: Icon(
@@ -352,16 +382,16 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
       fillColor: fieldBg,
       contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: _primary, width: 1.5),
       ),
     ),
   );
@@ -400,7 +430,7 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
+                  style: GoogleFonts.plusJakartaSans(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                     color: titleColor,
@@ -409,12 +439,15 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: TextStyle(fontSize: 12, color: subtitleColor),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    color: subtitleColor,
+                  ),
                 ),
               ],
             ),
           ),
-          Icon(Icons.chevron_right, color: chevronColor, size: 20),
+          Icon(Icons.chevron_right_rounded, color: chevronColor, size: 20),
         ],
       ),
     ),
@@ -425,53 +458,55 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
-    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final textPrimary = isDark
-        ? const Color(0xFFF1F5F9)
-        : const Color(0xFF0F172A);
-    final textSecondary = isDark ? const Color(0xFF94A3B8) : Colors.grey[500]!;
-    final borderColor = isDark
-        ? const Color(0xFF334155)
-        : const Color(0xFFE2E8F0);
+    final bgColor = isDark ? const Color(0xFF14142B) : _bgLight;
+    final cardColor = isDark ? const Color(0xFF1F1F3A) : _surfaceLight;
+    final navBg = isDark ? const Color(0xFF1F1F3A) : _surfaceLight;
+    final textPrimary = isDark ? const Color(0xFFF4F4FB) : _textPrimaryLight;
+    final textSecondary = isDark
+        ? const Color(0xFFA0A0B8)
+        : _textSecondaryLight;
     final dividerColor = isDark
-        ? const Color(0xFF334155)
-        : const Color(0xFFF1F5F9);
-    final navBg = isDark ? const Color(0xFF1E293B) : Colors.white;
-    const shadowColor = Color.fromRGBO(0, 0, 0, 0.04);
+        ? Colors.white.withOpacity(0.06)
+        : const Color(0xFFF0F1F6);
+    final iconBoxBg = isDark ? const Color(0xFF2A2A55) : _fieldBgLight;
+    final shadowColor = isDark
+        ? Colors.black.withOpacity(0.3)
+        : const Color(0xFF6C63FF).withOpacity(0.07);
 
     return Scaffold(
       backgroundColor: bgColor,
+      extendBody: true,
       body: SafeArea(
+        bottom: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 110),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Header ──────────────────────────────────────────────────────
+              // ── Header (minimal, no elevation) ────────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     children: [
                       Container(
-                        width: 40,
-                        height: 40,
+                        width: 38,
+                        height: 38,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E293B),
-                          borderRadius: BorderRadius.circular(10),
+                          color: _primary,
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
                           Icons.headset_mic_rounded,
                           color: Colors.white,
-                          size: 20,
+                          size: 18,
                         ),
                       ),
                       const SizedBox(width: 10),
-                      const Text(
+                      Text(
                         'HelpDesk',
-                        style: TextStyle(
-                          color: Color(0xFF2563EB),
+                        style: GoogleFonts.plusJakartaSans(
+                          color: _primary,
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
                           letterSpacing: -0.3,
@@ -484,15 +519,19 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
                     height: 38,
                     decoration: BoxDecoration(
                       color: cardColor,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: borderColor),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: shadowColor,
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Icon(
                       Icons.notifications_outlined,
-                      color: isDark
-                          ? const Color(0xFF94A3B8)
-                          : const Color(0xFF475569),
-                      size: 20,
+                      color: textSecondary,
+                      size: 18,
                     ),
                   ),
                 ],
@@ -509,12 +548,12 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
                 ),
                 decoration: BoxDecoration(
                   color: cardColor,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: const [
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
                     BoxShadow(
                       color: shadowColor,
-                      blurRadius: 8,
-                      offset: Offset(0, 2),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
                     ),
                   ],
                 ),
@@ -527,13 +566,16 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
                           width: 72,
                           height: 72,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(18),
-                            color: const Color(0xFF2563EB),
+                            borderRadius: BorderRadius.circular(20),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF6E8CFB), Color(0xFF4C63D2)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
                           ),
                           clipBehavior: Clip.antiAlias,
-                          // Use an actual avatar image or keep the icon fallback
                           child: const Icon(
-                            Icons.person,
+                            Icons.person_rounded,
                             color: Colors.white,
                             size: 40,
                           ),
@@ -545,7 +587,7 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
                             width: 16,
                             height: 16,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF22C55E),
+                              color: _success,
                               shape: BoxShape.circle,
                               border: Border.all(color: cardColor, width: 2.5),
                             ),
@@ -561,8 +603,8 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
                           Row(
                             children: [
                               Text(
-                                'Admin User',
-                                style: TextStyle(
+                                'Helpdesk',
+                                style: GoogleFonts.plusJakartaSans(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 17,
                                   color: textPrimary,
@@ -576,15 +618,13 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: isDark
-                                      ? const Color(0xFF1D3461)
-                                      : const Color(0xFFEFF6FF),
+                                  color: iconBoxBg,
                                   borderRadius: BorderRadius.circular(6),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'ADMIN',
-                                  style: TextStyle(
-                                    color: Color(0xFF2563EB),
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: _payIcon,
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: 0.5,
@@ -595,8 +635,8 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'admin@company.com',
-                            style: TextStyle(
+                            'helpdesk@gmail.com',
+                            style: GoogleFonts.plusJakartaSans(
                               color: textSecondary,
                               fontSize: 13,
                             ),
@@ -612,11 +652,9 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
 
               // ── ADMIN TOOLS label ────────────────────────────────────────────
               Text(
-                'ADMIN TOOLS',
-                style: TextStyle(
-                  color: isDark
-                      ? const Color(0xFF94A3B8)
-                      : const Color(0xFF64748B),
+                'HELPDESK TOOLS',
+                style: GoogleFonts.plusJakartaSans(
+                  color: textSecondary,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.2,
@@ -628,52 +666,26 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
               Container(
                 decoration: BoxDecoration(
                   color: cardColor,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: const [
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
                     BoxShadow(
                       color: shadowColor,
-                      blurRadius: 8,
-                      offset: Offset(0, 2),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
                     ),
                   ],
                 ),
                 child: Column(
                   children: [
                     _buildMenuItem(
-                      icon: Icons.manage_accounts_outlined,
-                      iconBg: isDark
-                          ? const Color(0xFF1D3461)
-                          : const Color(0xFFEFF6FF),
-                      iconColor: const Color(0xFF2563EB),
-                      title: 'User Management',
-                      subtitle: 'Manage users and roles',
-                      titleColor: textPrimary,
-                      subtitleColor: textSecondary,
-                      chevronColor: isDark
-                          ? const Color(0xFF475569)
-                          : const Color(0xFFCBD5E1),
-                      onTap: () {},
-                    ),
-                    Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: dividerColor,
-                      indent: 16,
-                      endIndent: 16,
-                    ),
-                    _buildMenuItem(
                       icon: Icons.bar_chart_rounded,
-                      iconBg: isDark
-                          ? const Color(0xFF1D3461)
-                          : const Color(0xFFEFF6FF),
-                      iconColor: const Color(0xFF2563EB),
+                      iconBg: iconBoxBg,
+                      iconColor: _payIcon,
                       title: 'Reports',
                       subtitle: 'View ticket statistics',
                       titleColor: textPrimary,
                       subtitleColor: textSecondary,
-                      chevronColor: isDark
-                          ? const Color(0xFF475569)
-                          : const Color(0xFFCBD5E1),
+                      chevronColor: textSecondary,
                       onTap: () {},
                     ),
                     Divider(
@@ -685,17 +697,13 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
                     ),
                     _buildMenuItem(
                       icon: Icons.confirmation_num_outlined,
-                      iconBg: isDark
-                          ? const Color(0xFF1D3461)
-                          : const Color(0xFFEFF6FF),
-                      iconColor: const Color(0xFF2563EB),
+                      iconBg: iconBoxBg,
+                      iconColor: _payIcon,
                       title: 'Assigned Tickets',
                       subtitle: 'View your assigned tickets',
                       titleColor: textPrimary,
                       subtitleColor: textSecondary,
-                      chevronColor: isDark
-                          ? const Color(0xFF475569)
-                          : const Color(0xFFCBD5E1),
+                      chevronColor: textSecondary,
                       onTap: () {},
                     ),
                   ],
@@ -707,10 +715,8 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
               // ── SETTINGS label ───────────────────────────────────────────────
               Text(
                 'SETTINGS',
-                style: TextStyle(
-                  color: isDark
-                      ? const Color(0xFF94A3B8)
-                      : const Color(0xFF64748B),
+                style: GoogleFonts.plusJakartaSans(
+                  color: textSecondary,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.2,
@@ -722,12 +728,12 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
               Container(
                 decoration: BoxDecoration(
                   color: cardColor,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: const [
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
                     BoxShadow(
                       color: shadowColor,
-                      blurRadius: 8,
-                      offset: Offset(0, 2),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
                     ),
                   ],
                 ),
@@ -745,20 +751,18 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF334155)
-                                : const Color(0xFFEFF6FF),
+                            color: iconBoxBg,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(
                             Icons.dark_mode_outlined,
-                            color: Color(0xFF2563EB),
+                            color: _payIcon,
                             size: 20,
                           ),
                         ),
                         title: Text(
                           'Dark Mode',
-                          style: TextStyle(
+                          style: GoogleFonts.plusJakartaSans(
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
                             color: textPrimary,
@@ -766,10 +770,13 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
                         ),
                         subtitle: Text(
                           'Enable dark theme',
-                          style: TextStyle(color: textSecondary, fontSize: 12),
+                          style: GoogleFonts.plusJakartaSans(
+                            color: textSecondary,
+                            fontSize: 12,
+                          ),
                         ),
                         value: isDark,
-                        activeColor: const Color(0xFF2563EB),
+                        activeColor: _primary,
                         onChanged: (val) => widget.toggleTheme(val),
                       ),
                     ),
@@ -783,17 +790,13 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
                     // Reset Password
                     _buildMenuItem(
                       icon: Icons.lock_reset_outlined,
-                      iconBg: isDark
-                          ? const Color(0xFF1D3461)
-                          : const Color(0xFFEFF6FF),
-                      iconColor: const Color(0xFF2563EB),
+                      iconBg: iconBoxBg,
+                      iconColor: _payIcon,
                       title: 'Reset Password',
                       subtitle: 'Manage your account security',
                       titleColor: textPrimary,
                       subtitleColor: textSecondary,
-                      chevronColor: isDark
-                          ? const Color(0xFF475569)
-                          : const Color(0xFFCBD5E1),
+                      chevronColor: textSecondary,
                       onTap: () => _showResetPasswordSheet(isDark),
                     ),
                   ],
@@ -805,10 +808,8 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
               // ── GENERAL label ────────────────────────────────────────────────
               Text(
                 'GENERAL',
-                style: TextStyle(
-                  color: isDark
-                      ? const Color(0xFF94A3B8)
-                      : const Color(0xFF64748B),
+                style: GoogleFonts.plusJakartaSans(
+                  color: textSecondary,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.2,
@@ -820,12 +821,12 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
               Container(
                 decoration: BoxDecoration(
                   color: cardColor,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: const [
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
                     BoxShadow(
                       color: shadowColor,
-                      blurRadius: 8,
-                      offset: Offset(0, 2),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
                     ),
                   ],
                 ),
@@ -833,17 +834,13 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
                   children: [
                     _buildMenuItem(
                       icon: Icons.info_outline_rounded,
-                      iconBg: isDark
-                          ? const Color(0xFF1D3461)
-                          : const Color(0xFFEFF6FF),
-                      iconColor: const Color(0xFF2563EB),
+                      iconBg: iconBoxBg,
+                      iconColor: _payIcon,
                       title: 'About App',
                       subtitle: 'Version 2.4.1 (Stable)',
                       titleColor: textPrimary,
                       subtitleColor: textSecondary,
-                      chevronColor: isDark
-                          ? const Color(0xFF475569)
-                          : const Color(0xFFCBD5E1),
+                      chevronColor: textSecondary,
                       onTap: () {},
                     ),
                     Divider(
@@ -855,17 +852,13 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
                     ),
                     _buildMenuItem(
                       icon: Icons.logout_rounded,
-                      iconBg: isDark
-                          ? const Color(0xFF450A0A).withOpacity(0.5)
-                          : const Color(0xFFFEE2E2),
-                      iconColor: const Color(0xFFEF4444),
+                      iconBg: _dangerBg,
+                      iconColor: _danger,
                       title: 'Logout',
                       subtitle: 'Sign out of your account',
-                      titleColor: const Color(0xFFEF4444),
-                      subtitleColor: isDark
-                          ? const Color(0xFF94A3B8)
-                          : Colors.grey[400]!,
-                      chevronColor: const Color(0xFFEF4444),
+                      titleColor: _danger,
+                      subtitleColor: textSecondary,
+                      chevronColor: _danger,
                       onTap: () {
                         // Navigate to login and clear stack
                         Navigator.pushNamedAndRemoveUntil(
@@ -885,43 +878,72 @@ class _HelpdeskProfilePageState extends State<HelpdeskProfilePage> {
         ),
       ),
 
-      // ── Bottom nav ──────────────────────────────────────────────────────────
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 3,
-        onTap: _onNavTap,
-        selectedItemColor: const Color(0xFF2563EB),
-        unselectedItemColor: const Color(0xFF94A3B8),
-        selectedLabelStyle: const TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
+      // ── Floating Bottom Nav (konsisten sama halaman lain) ──────────────────
+      bottomNavigationBar: Container(
+        margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        decoration: BoxDecoration(
+          color: navBg,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
-        unselectedLabelStyle: const TextStyle(fontSize: 10, letterSpacing: 0.5),
-        backgroundColor: navBg,
-        elevation: 8,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home_rounded),
-            label: 'HOME',
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BottomNavigationBar(
+            currentIndex: 3,
+            onTap: _onNavTap,
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: navBg,
+            elevation: 0,
+            selectedItemColor: _primary,
+            unselectedItemColor: textSecondary,
+            showSelectedLabels: true,
+            showUnselectedLabels: true,
+            selectedLabelStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+            unselectedLabelStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+            items: const [
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.grid_view_rounded, size: 24),
+                ),
+                label: 'Home',
+              ),
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.confirmation_num_outlined, size: 24),
+                ),
+                label: 'Ticket',
+              ),
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.notifications_none, size: 24),
+                ),
+                label: 'Notif',
+              ),
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.person_outline, size: 24),
+                ),
+                label: 'Profile',
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.confirmation_num_outlined),
-            activeIcon: Icon(Icons.confirmation_num_rounded),
-            label: 'TICKETS',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_none_rounded),
-            activeIcon: Icon(Icons.notifications_rounded),
-            label: 'NOTIFICATIONS',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline_rounded),
-            activeIcon: Icon(Icons.person_rounded),
-            label: 'PROFILE',
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'helpdesk_dashboard_page.dart';
 import 'helpdesk_ticket_page.dart';
 import 'helpdesk_profile_page.dart';
+import 'helpdesk_ticket_detail_page.dart'; // Import halaman detail
 import '../../services/ticket_service.dart';
 
 class HelpdeskNotificationPage extends StatefulWidget {
@@ -40,6 +43,7 @@ class _HelpdeskNotificationPageState extends State<HelpdeskNotificationPage> {
         _notifications = data.map((notif) {
           return {
             "id": notif["id"],
+            "ticket_id": notif["ticket_id"], // Ambil ID Tiket dari DB
             "title": notif["title"] ?? "Notification",
             "message": notif["message"] ?? "-",
             "status": notif["status"] ?? "INFO",
@@ -108,14 +112,13 @@ class _HelpdeskNotificationPageState extends State<HelpdeskNotificationPage> {
         ),
       );
     }
-
-    setState(() => _selectedIndex = index);
   }
 
   IconData _notifIcon(String type, String status) {
     if (type == "new_ticket") return Icons.warning_amber_rounded;
     if (type == "ticket_update") return Icons.sync_alt_rounded;
-    if (status == "RESOLVED") return Icons.check_circle_outline;
+    if (status == "RESOLVED" || status == "CLOSED")
+      return Icons.check_circle_outline;
     if (status == "PENDING") return Icons.hourglass_bottom_rounded;
     if (status == "IN PROGRESS") return Icons.group_outlined;
     return Icons.notifications_active_outlined;
@@ -130,6 +133,7 @@ class _HelpdeskNotificationPageState extends State<HelpdeskNotificationPage> {
       case "IN PROGRESS":
         return const Color(0xFF2563EB);
       case "RESOLVED":
+      case "CLOSED":
         return const Color(0xFF16A34A);
       default:
         return const Color(0xFF475569);
@@ -147,6 +151,7 @@ class _HelpdeskNotificationPageState extends State<HelpdeskNotificationPage> {
       case "IN PROGRESS":
         return isDark ? const Color(0xFF1D3461) : const Color(0xFFEFF6FF);
       case "RESOLVED":
+      case "CLOSED":
         return isDark
             ? const Color.fromRGBO(20, 83, 45, 0.4)
             : const Color(0xFFF0FDF4);
@@ -182,19 +187,29 @@ class _HelpdeskNotificationPageState extends State<HelpdeskNotificationPage> {
         : const Color(0xFFE2E8F0);
     final navBg = isDark ? const Color(0xFF1E293B) : Colors.white;
     final labelColor = const Color(0xFF94A3B8);
+    final shadowColor = isDark
+        ? Colors.black.withOpacity(0.25)
+        : const Color(0xFF2563EB).withOpacity(0.06);
 
     return Scaffold(
       backgroundColor: bgColor,
+      extendBody: true, // Supaya bisa di-scroll tembus di bawah navbar melayang
       body: SafeArea(
+        bottom: false,
         child: isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(
+                child: CircularProgressIndicator(color: Color(0xFF2563EB)),
+              )
             : RefreshIndicator(
                 onRefresh: _loadNotifications,
+                color: const Color(0xFF2563EB),
                 child: ListView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(
+                    20,
+                    16,
+                    20,
+                    100,
+                  ), // Spasi bawah ditambah
                   children: [
                     // HEADER
                     Row(
@@ -216,10 +231,10 @@ class _HelpdeskNotificationPageState extends State<HelpdeskNotificationPage> {
                               ),
                             ),
                             const SizedBox(width: 10),
-                            const Text(
+                            Text(
                               "Concierge",
-                              style: TextStyle(
-                                color: Color(0xFF2563EB),
+                              style: GoogleFonts.plusJakartaSans(
+                                color: const Color(0xFF2563EB),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
                                 letterSpacing: -0.3,
@@ -265,7 +280,7 @@ class _HelpdeskNotificationPageState extends State<HelpdeskNotificationPage> {
 
                     Text(
                       "Notification Center",
-                      style: TextStyle(
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: textPrimary,
@@ -275,7 +290,7 @@ class _HelpdeskNotificationPageState extends State<HelpdeskNotificationPage> {
                     const SizedBox(height: 2),
                     Text(
                       "Admin activity log & system alerts from Supabase.",
-                      style: TextStyle(
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 13,
                         color: labelColor,
                         height: 1.4,
@@ -311,6 +326,86 @@ class _HelpdeskNotificationPageState extends State<HelpdeskNotificationPage> {
                         statusColor: _statusColor(status),
                         statusBg: _statusBg(status, isDark),
                         textPrimary: textPrimary,
+                        // 🔥 FUNGSI ON TAP BARU BUAT BUKA DETAIL TIKET 🔥
+                        onTap: () async {
+                          final ticketId = notif["ticket_id"];
+                          if (ticketId == null) return;
+
+                          // Tandai sebagai dibaca di database
+                          Supabase.instance.client
+                              .from('notifications')
+                              .update({'is_read': true})
+                              .eq('id', notif['id'])
+                              .then((_) {}); // Fire & forget
+
+                          setState(() => notif["isRead"] = true);
+
+                          // Tampilkan Loading
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (_) => const Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF2563EB),
+                              ),
+                            ),
+                          );
+
+                          try {
+                            // Tarik data tiket full dari Supabase
+                            final response = await Supabase.instance.client
+                                .from('tickets')
+                                .select()
+                                .eq('id', ticketId)
+                                .single();
+
+                            if (!mounted) return;
+                            Navigator.pop(context); // Tutup loading
+
+                            // Map data tiket sebelum dilempar ke halaman detail
+                            final mappedTicket = {
+                              "dbId": response["id"],
+                              "id": response["ticket_code"] ?? "#TK-0000",
+                              "title": response["title"] ?? "Untitled",
+                              "description":
+                                  response["description"] ?? "No description",
+                              "category":
+                                  response["category"] ?? "Technical Support",
+                              "reporter":
+                                  response["reporter"] ?? "Unknown User",
+                              "status": response["status"] ?? "OPEN",
+                              "priority": response["priority"] ?? "LOW",
+                              "requestedPriority":
+                                  response["requested_priority"] ?? "-",
+                              "assignedTo":
+                                  response["assigned_to"] ?? "Unassigned",
+                              "time": response["created_at"],
+                              "strikethrough":
+                                  response["strikethrough"] ?? false,
+                              "attachment_url": response["attachment_url"],
+                            };
+
+                            // Navigasi ke halaman detail
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => HelpdeskTicketDetailPage(
+                                  ticket: mappedTicket,
+                                  toggleTheme: widget.toggleTheme,
+                                ),
+                              ),
+                            );
+
+                            // Refresh notifikasi setelah kembali
+                            _loadNotifications();
+                          } catch (e) {
+                            if (!mounted) return;
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("Ticket not found: $e")),
+                            );
+                          }
+                        },
                       );
                     }),
 
@@ -340,19 +435,19 @@ class _HelpdeskNotificationPageState extends State<HelpdeskNotificationPage> {
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
+                              children: [
                                 Row(
                                   children: [
-                                    Icon(
+                                    const Icon(
                                       Icons.bolt,
                                       color: Color(0xFFF97316),
                                       size: 14,
                                     ),
-                                    SizedBox(width: 4),
+                                    const SizedBox(width: 4),
                                     Text(
                                       "MAINTENANCE NOTICE",
-                                      style: TextStyle(
-                                        color: Color(0xFFF97316),
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: const Color(0xFFF97316),
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
                                         letterSpacing: 0.8,
@@ -360,10 +455,10 @@ class _HelpdeskNotificationPageState extends State<HelpdeskNotificationPage> {
                                     ),
                                   ],
                                 ),
-                                SizedBox(height: 10),
+                                const SizedBox(height: 10),
                                 Text(
                                   "Ticket System\nMaintenance Window",
-                                  style: TextStyle(
+                                  style: GoogleFonts.plusJakartaSans(
                                     color: Colors.white,
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
@@ -371,11 +466,16 @@ class _HelpdeskNotificationPageState extends State<HelpdeskNotificationPage> {
                                     letterSpacing: -0.3,
                                   ),
                                 ),
-                                SizedBox(height: 8),
+                                const SizedBox(height: 8),
                                 Text(
                                   "Tomorrow, 02:00–04:00 AM UTC\nTicket intake will be paused.",
-                                  style: TextStyle(
-                                    color: Color.fromRGBO(255, 255, 255, 0.6),
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: const Color.fromRGBO(
+                                      255,
+                                      255,
+                                      255,
+                                      0.6,
+                                    ),
                                     fontSize: 12,
                                     height: 1.5,
                                   ),
@@ -440,38 +540,72 @@ class _HelpdeskNotificationPageState extends State<HelpdeskNotificationPage> {
               ),
       ),
 
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onNavTap,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF2563EB),
-        unselectedItemColor: const Color(0xFF94A3B8),
-        selectedLabelStyle: const TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
+      // 👇 NAVBAR FLOATING FIX 👇
+      bottomNavigationBar: Container(
+        margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        decoration: BoxDecoration(
+          color: navBg,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
-        unselectedLabelStyle: const TextStyle(fontSize: 10, letterSpacing: 0.5),
-        backgroundColor: navBg,
-        elevation: 8,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.grid_view_rounded),
-            label: "HOME",
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BottomNavigationBar(
+            currentIndex: _selectedIndex,
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: navBg,
+            elevation: 0,
+            selectedItemColor: const Color(0xFF2563EB),
+            unselectedItemColor: labelColor,
+            showSelectedLabels: true,
+            showUnselectedLabels: true,
+            selectedLabelStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+            unselectedLabelStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+            onTap: _onNavTap,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.grid_view_rounded, size: 24),
+                ),
+                label: "Home",
+              ),
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.confirmation_num_outlined, size: 24),
+                ),
+                label: "Ticket",
+              ),
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.notifications_none, size: 24),
+                ),
+                label: "Notif",
+              ),
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.person_outline, size: 24),
+                ),
+                label: "Profile",
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.confirmation_num_outlined),
-            label: "TICKETS",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: "NOTIFICATIONS",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: "PROFILE",
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -479,9 +613,9 @@ class _HelpdeskNotificationPageState extends State<HelpdeskNotificationPage> {
   Widget _sectionTitle(String text) {
     return Text(
       text,
-      style: const TextStyle(
+      style: GoogleFonts.plusJakartaSans(
         fontWeight: FontWeight.w700,
-        color: Color(0xFF94A3B8),
+        color: const Color(0xFF94A3B8),
         fontSize: 11,
         letterSpacing: 1.2,
       ),
@@ -507,13 +641,19 @@ class _HelpdeskNotificationPageState extends State<HelpdeskNotificationPage> {
           const SizedBox(height: 10),
           Text(
             "No notifications found",
-            style: TextStyle(color: textPrimary, fontWeight: FontWeight.bold),
+            style: GoogleFonts.plusJakartaSans(
+              color: textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             "Create or update a ticket to generate notifications.",
             textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+            style: GoogleFonts.plusJakartaSans(
+              color: const Color(0xFF94A3B8),
+              fontSize: 13,
+            ),
           ),
         ],
       ),
@@ -530,68 +670,73 @@ class _HelpdeskNotificationPageState extends State<HelpdeskNotificationPage> {
     required Color statusBg,
     required Color cardColor,
     required Color textPrimary,
+    required VoidCallback onTap,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(
-            color: Color.fromRGBO(0, 0, 0, 0.04),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          iconWidget,
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: textPrimary,
-                    fontWeight: FontWeight.w500,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  time,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF94A3B8),
-                  ),
-                ),
-              ],
+    // Dibungkus pakai GestureDetector buat nangkep klikan
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: const [
+            BoxShadow(
+              color: Color.fromRGBO(0, 0, 0, 0.04),
+              blurRadius: 8,
+              offset: Offset(0, 2),
             ),
-          ),
-          const SizedBox(width: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: statusBg,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              status,
-              style: TextStyle(
-                color: statusColor,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.3,
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            iconWidget,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      color: textPrimary,
+                      fontWeight: FontWeight.w500,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    time,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      color: const Color(0xFF94A3B8),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: statusBg,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                status,
+                style: GoogleFonts.plusJakartaSans(
+                  color: statusColor,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -649,7 +794,7 @@ class _HelpdeskNotificationPageState extends State<HelpdeskNotificationPage> {
           const SizedBox(height: 12),
           Text(
             value,
-            style: TextStyle(
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 26,
               fontWeight: FontWeight.bold,
               color: textPrimary,
@@ -659,9 +804,9 @@ class _HelpdeskNotificationPageState extends State<HelpdeskNotificationPage> {
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 11,
-              color: Color(0xFF94A3B8),
+              color: const Color(0xFF94A3B8),
               fontWeight: FontWeight.w600,
               letterSpacing: 0.5,
             ),

@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../services/ticket_service.dart';
@@ -22,12 +25,30 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
   final TextEditingController _commentController = TextEditingController();
   final TicketService _ticketService = TicketService();
 
-  String _selectedStatus = "IN PROGRESS";
+  // Variabel untuk Upload Gambar
+  File? _selectedImage;
+  final ImagePicker _picker = ImagePicker();
 
+  String _selectedStatus = "IN PROGRESS";
   bool isUpdating = false;
   bool isLoadingComments = true;
+  bool _isSendingComment = false;
 
   List<Map<String, dynamic>> _comments = [];
+
+  // ---- Style guide constants ----
+  static const _bgLight = Color(0xFFEDEFF7);
+  static const _surfaceLight = Color(0xFFFFFFFF);
+  static const _primary = Color(0xFF6C63FF);
+  static const _textPrimaryLight = Color(0xFF14142B);
+  static const _textSecondaryLight = Color(0xFF92929D);
+  static const _fieldBgLight = Color(0xFFF1E9FF); // pastel "Pay" category
+  static const _payIcon = Color(0xFF8B5CF6);
+  static const _success = Color(0xFF21D07B);
+  static const _successBg = Color(0xFFE3FAEC);
+  static const _warning = Color(0xFFFF9F43);
+  static const _danger = Color(0xFFF45B69);
+  static const _dangerBg = Color(0xFFFCE9EB);
 
   @override
   void initState() {
@@ -49,6 +70,25 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
     super.dispose();
   }
 
+  // Fungsi ambil gambar dari galeri
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70,
+      );
+      if (image != null) {
+        setState(() {
+          _selectedImage = File(image.path);
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Failed to pick image: $e")));
+    }
+  }
+
   Future<void> _loadComments() async {
     final dbId = widget.ticket["dbId"];
     if (dbId == null) {
@@ -64,17 +104,17 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
       if (!mounted) return;
 
       setState(() {
+        // 🔥 FIX LOGIKA MAPPING DATA DARI DATABASE 🔥
         _comments = data.map<Map<String, dynamic>>((c) {
-          final isAdmin = c["is_admin"] ?? c["isAdmin"] ?? false;
           return {
-            "sender": isAdmin ? "admin" : "user",
-            "name":
-                c["sender_name"] ?? c["name"] ?? (isAdmin ? "Admin" : "User"),
-            "time": c["time"] ?? c["created_at"] ?? "",
+            "sender_role": c["sender_role"] ?? "user",
+            "sender_name": c["sender_name"] ?? "Unknown",
+            "created_at": c["created_at"] ?? "",
             "message": c["message"] ?? "",
-            "isAdmin": isAdmin,
+            "attachment_url": c["attachment_url"],
           };
         }).toList();
+
         isLoadingComments = false;
       });
     } catch (e) {
@@ -86,6 +126,62 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
           backgroundColor: Colors.red,
         ),
       );
+    }
+  }
+
+  Future<void> _sendComment() async {
+    final text = _commentController.text.trim();
+    final dbId = widget.ticket["dbId"];
+
+    if ((text.isEmpty && _selectedImage == null) ||
+        dbId == null ||
+        _isSendingComment)
+      return;
+
+    setState(() => _isSendingComment = true);
+    FocusScope.of(context).unfocus();
+
+    try {
+      String? attachmentUrl;
+
+      // Upload Gambar ke Supabase Storage (Jika Ada)
+      if (_selectedImage != null) {
+        final fileExt = _selectedImage!.path.split('.').last;
+        final fileName = '${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+        final filePath = 'ticket_$dbId/$fileName';
+
+        await Supabase.instance.client.storage
+            .from('attachments')
+            .upload(filePath, _selectedImage!);
+
+        attachmentUrl = Supabase.instance.client.storage
+            .from('attachments')
+            .getPublicUrl(filePath);
+      }
+
+      await _ticketService.addComment(
+        ticketId: dbId is int ? dbId : int.parse(dbId.toString()),
+        senderRole: "helpdesk",
+        senderName: "Helpdesk Agent", // Bisa disesuaikan dari SharedPreferences
+        message: text.isEmpty ? "Sent an attachment" : text,
+        attachmentUrl: attachmentUrl,
+      );
+
+      _commentController.clear();
+      setState(() {
+        _selectedImage = null; // Hapus preview setelah terkirim
+      });
+      await _loadComments();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Failed to send: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSendingComment = false);
     }
   }
 
@@ -125,7 +221,7 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
               Text("Ticket closed successfully"),
             ],
           ),
-          backgroundColor: const Color(0xFF16A34A),
+          backgroundColor: _success,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -155,12 +251,23 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
     }
   }
 
-  // Fungsi untuk membuka link PDF / Dokumen di browser bawaan HP
+  // Fungsi formatter tanggal
+  String _formatDate(dynamic rawDate) {
+    if (rawDate == null || rawDate.toString().isEmpty) return "";
+    try {
+      final dt = DateTime.parse(rawDate.toString()).toLocal();
+      return "${dt.day}/${dt.month}/${dt.year} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  // Buka link PDF / Dokumen di browser
   Future<void> _launchURL(String url) async {
     final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
+    try {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -173,19 +280,18 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
-    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final textPrimary = isDark
-        ? const Color(0xFFF1F5F9)
-        : const Color(0xFF0F172A);
+    final bgColor = isDark ? const Color(0xFF14142B) : _bgLight;
+    final cardColor = isDark ? const Color(0xFF1F1F3A) : _surfaceLight;
+    final textPrimary = isDark ? const Color(0xFFF4F4FB) : _textPrimaryLight;
     final textSecondary = isDark
-        ? const Color(0xFF94A3B8)
-        : const Color(0xFF64748B);
-    final borderColor = isDark
-        ? const Color(0xFF334155)
-        : const Color(0xFFE2E8F0);
-    final labelColor = const Color(0xFF94A3B8);
-    final infoBg = isDark ? const Color(0xFF0F172A) : const Color(0xFFEEF2FF);
+        ? const Color(0xFFA0A0B8)
+        : _textSecondaryLight;
+    final fieldBg = isDark ? const Color(0xFF2A2A55) : _fieldBgLight;
+    final infoBg = isDark ? const Color(0xFF2A2A55) : _fieldBgLight;
+    final inputBarBg = isDark ? const Color(0xFF1F1F3A) : _surfaceLight;
+    final shadowColor = isDark
+        ? Colors.black.withOpacity(0.3)
+        : const Color(0xFF6C63FF).withOpacity(0.07);
 
     final finalPriority = widget.ticket["priority"] ?? "HIGH";
     final assignedTo = widget.ticket["assignedTo"] ?? "Helpdesk";
@@ -197,38 +303,64 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // HEADER
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            // ---- Top App Bar (minimal, no elevation, nyatu background) ----
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
               child: Row(
                 children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back,
-                      color: Color(0xFF2563EB),
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  const Expanded(
-                    child: Text(
-                      "Ticket Details",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 17,
-                        color: Color(0xFF2563EB),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: cardColor,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: shadowColor,
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_rounded,
+                        color: _primary,
+                        size: 20,
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.more_vert,
-                      color: isDark
-                          ? const Color(0xFF94A3B8)
-                          : const Color(0xFF1E293B),
+                  Expanded(
+                    child: Text(
+                      "Ticket Details",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: textPrimary,
+                      ),
                     ),
-                    onPressed: () {},
+                  ),
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: shadowColor,
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.more_vert_rounded,
+                      color: textSecondary,
+                      size: 20,
+                    ),
                   ),
                 ],
               ),
@@ -236,29 +368,26 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
 
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
-                ),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
                 children: [
                   // ID + TITLE
                   Text(
                     widget.ticket["id"] ?? "#TK-8821",
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2563EB),
+                      color: _primary,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     widget.ticket["title"] ?? "Untitled Ticket",
-                    style: TextStyle(
-                      fontSize: 22,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 21,
                       fontWeight: FontWeight.bold,
                       color: textPrimary,
                       height: 1.3,
-                      letterSpacing: -0.4,
+                      letterSpacing: -0.3,
                     ),
                   ),
 
@@ -266,11 +395,17 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
 
                   // ORIGINAL REPORT
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
                       color: cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: borderColor),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: shadowColor,
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -280,16 +415,16 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
                             Icon(
                               Icons.description_outlined,
                               size: 14,
-                              color: labelColor,
+                              color: textSecondary,
                             ),
                             const SizedBox(width: 6),
                             Text(
                               "ORIGINAL REPORT",
-                              style: TextStyle(
+                              style: GoogleFonts.plusJakartaSans(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 1,
-                                color: labelColor,
+                                color: textSecondary,
                               ),
                             ),
                           ],
@@ -298,7 +433,7 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
                         Text(
                           widget.ticket["description"] ??
                               "No description provided.",
-                          style: TextStyle(
+                          style: GoogleFonts.plusJakartaSans(
                             height: 1.6,
                             fontSize: 13,
                             color: textSecondary,
@@ -308,13 +443,13 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
                     ),
                   ),
 
-                  // TAMPILKAN LAMPIRAN (FOTO ATAU DOKUMEN)
+                  // TAMPILKAN LAMPIRAN (FOTO ATAU DOKUMEN UTAMA TIKET)
                   if (attachmentUrl != null &&
                       attachmentUrl.toString().isNotEmpty) ...[
                     const SizedBox(height: 20),
                     Text(
                       "Attachment",
-                      style: TextStyle(
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: textSecondary,
@@ -325,15 +460,14 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
                       builder: (context) {
                         final urlString = attachmentUrl.toString();
                         final lowerUrl = urlString.toLowerCase();
-                        // Cek apakah url adalah gambar atau dokumen
                         final isImage =
-                            lowerUrl.endsWith('.jpg') ||
-                            lowerUrl.endsWith('.jpeg') ||
-                            lowerUrl.endsWith('.png');
+                            lowerUrl.contains('.jpg') ||
+                            lowerUrl.contains('.jpeg') ||
+                            lowerUrl.contains('.png');
 
                         if (isImage) {
                           return ClipRRect(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(18),
                             child: Image.network(
                               urlString,
                               width: double.infinity,
@@ -345,33 +479,54 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
                                       height: 200,
                                       decoration: BoxDecoration(
                                         color: cardColor,
-                                        borderRadius: BorderRadius.circular(14),
-                                        border: Border.all(color: borderColor),
+                                        borderRadius: BorderRadius.circular(18),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: shadowColor,
+                                            blurRadius: 24,
+                                            offset: const Offset(0, 8),
+                                          ),
+                                        ],
                                       ),
                                       child: const Center(
-                                        child: CircularProgressIndicator(),
+                                        child: CircularProgressIndicator(
+                                          color: _primary,
+                                        ),
                                       ),
                                     );
                                   },
                             ),
                           );
                         } else {
-                          // Jika dokumen (PDF, Doc, dll), berikan tombol untuk buka file
                           return GestureDetector(
                             onTap: () => _launchURL(urlString),
                             child: Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 color: cardColor,
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: borderColor),
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: shadowColor,
+                                    blurRadius: 24,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(
-                                    Icons.insert_drive_file_outlined,
-                                    color: Color(0xFF2563EB),
-                                    size: 32,
+                                  Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      color: fieldBg,
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: const Icon(
+                                      Icons.insert_drive_file_outlined,
+                                      color: _payIcon,
+                                      size: 22,
+                                    ),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
@@ -381,7 +536,7 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
                                       children: [
                                         Text(
                                           "Document File",
-                                          style: TextStyle(
+                                          style: GoogleFonts.plusJakartaSans(
                                             fontWeight: FontWeight.bold,
                                             color: textPrimary,
                                             fontSize: 14,
@@ -390,7 +545,7 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
                                         const SizedBox(height: 4),
                                         Text(
                                           "Tap to view or download document",
-                                          style: TextStyle(
+                                          style: GoogleFonts.plusJakartaSans(
                                             color: textSecondary,
                                             fontSize: 12,
                                           ),
@@ -399,7 +554,7 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
                                     ),
                                   ),
                                   Icon(
-                                    Icons.open_in_new,
+                                    Icons.open_in_new_rounded,
                                     color: textSecondary,
                                     size: 20,
                                   ),
@@ -417,7 +572,7 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
                   // STATUS
                   Text(
                     "Status",
-                    style: TextStyle(
+                    style: GoogleFonts.plusJakartaSans(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: textSecondary,
@@ -428,25 +583,25 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
                       vertical: 14,
-                      horizontal: 14,
+                      horizontal: 16,
                     ),
                     decoration: BoxDecoration(
                       color: _statusBadgeBg(_selectedStatus),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           _selectedStatus == "CLOSED"
-                              ? Icons.check_circle_outline
-                              : Icons.autorenew,
+                              ? Icons.check_circle_outline_rounded
+                              : Icons.autorenew_rounded,
                           size: 16,
                           color: _statusTextColor(_selectedStatus),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           _selectedStatus,
-                          style: TextStyle(
+                          style: GoogleFonts.plusJakartaSans(
                             color: _statusTextColor(_selectedStatus),
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -467,7 +622,7 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
                           children: [
                             Text(
                               "Requested Priority",
-                              style: TextStyle(
+                              style: GoogleFonts.plusJakartaSans(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 color: textSecondary,
@@ -481,13 +636,13 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
                                 horizontal: 14,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFEE2E2),
-                                borderRadius: BorderRadius.circular(12),
+                                color: _dangerBg,
+                                borderRadius: BorderRadius.circular(14),
                               ),
                               child: Text(
                                 widget.ticket["requestedPriority"] ?? "-",
-                                style: const TextStyle(
-                                  color: Color(0xFFEF4444),
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: _danger,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                 ),
@@ -503,7 +658,7 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
                           children: [
                             Text(
                               "Final Priority",
-                              style: TextStyle(
+                              style: GoogleFonts.plusJakartaSans(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 color: textSecondary,
@@ -518,13 +673,13 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
                               ),
                               decoration: BoxDecoration(
                                 color: infoBg,
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(14),
                               ),
                               child: Text(
                                 finalPriority,
-                                style: TextStyle(
-                                  color: textPrimary,
-                                  fontWeight: FontWeight.w600,
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: isDark ? textPrimary : _payIcon,
+                                  fontWeight: FontWeight.w700,
                                   fontSize: 14,
                                 ),
                               ),
@@ -540,7 +695,7 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
                   // ASSIGNED TO
                   Text(
                     "Assigned To",
-                    style: TextStyle(
+                    style: GoogleFonts.plusJakartaSans(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: textSecondary,
@@ -555,19 +710,29 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
                     ),
                     decoration: BoxDecoration(
                       color: infoBg,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
-                          Icons.support_agent_outlined,
-                          size: 18,
-                          color: Color(0xFF2563EB),
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withOpacity(0.08)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.support_agent_outlined,
+                            size: 17,
+                            color: _payIcon,
+                          ),
                         ),
                         const SizedBox(width: 10),
                         Text(
                           assignedTo,
-                          style: TextStyle(
+                          style: GoogleFonts.plusJakartaSans(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: textPrimary,
@@ -577,21 +742,24 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
 
                   // FINISH TICKET BUTTON
                   SizedBox(
                     width: double.infinity,
-                    height: 52,
+                    height: 54,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _selectedStatus == "CLOSED"
-                            ? const Color(0xFF94A3B8)
-                            : const Color(0xFF16A34A),
+                            ? (isDark
+                                  ? const Color(0xFF3A3A5C)
+                                  : const Color(0xFFD8DAE8))
+                            : _success,
                         foregroundColor: Colors.white,
                         elevation: 0,
+                        shadowColor: Colors.transparent,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                       ),
                       onPressed: (isUpdating || _selectedStatus == "CLOSED")
@@ -610,7 +778,7 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
                               _selectedStatus == "CLOSED"
                                   ? "Ticket Closed"
                                   : "Finish Ticket",
-                              style: const TextStyle(
+                              style: GoogleFonts.plusJakartaSans(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -623,10 +791,10 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
                   Center(
                     child: Text(
                       "CONVERSATION THREAD",
-                      style: TextStyle(
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: labelColor,
+                        color: textSecondary,
                         letterSpacing: 1.2,
                       ),
                     ),
@@ -637,19 +805,30 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
                   if (isLoadingComments)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 24),
-                      child: Center(child: CircularProgressIndicator()),
+                      child: Center(
+                        child: CircularProgressIndicator(color: _primary),
+                      ),
                     )
                   else if (_comments.isEmpty)
                     Center(
                       child: Text(
                         "No comments yet.",
-                        style: TextStyle(fontSize: 13, color: textSecondary),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          color: textSecondary,
+                        ),
                       ),
                     )
                   else
                     ..._comments.map(
-                      (c) =>
-                          _buildChatBubble(c, isDark, cardColor, textSecondary),
+                      (c) => _buildChatBubble(
+                        c,
+                        isDark,
+                        cardColor,
+                        fieldBg,
+                        textPrimary,
+                        textSecondary,
+                      ),
                     ),
 
                   const SizedBox(height: 8),
@@ -657,67 +836,127 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
               ),
             ),
 
-            // COMMENT INPUT
+            // COMMENT INPUT BAR DENGAN ATTACHMENT
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                border: Border(top: BorderSide(color: borderColor)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _commentController,
-                      style: TextStyle(fontSize: 14, color: textPrimary),
-                      decoration: InputDecoration(
-                        hintText: "Add a comment...",
-                        hintStyle: TextStyle(color: labelColor, fontSize: 14),
-                        border: InputBorder.none,
-                      ),
-                    ),
+                color: inputBarBg,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: shadowColor,
+                    blurRadius: 24,
+                    offset: const Offset(0, -6),
                   ),
-                  const SizedBox(width: 12),
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF2563EB),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      onPressed: () async {
-                        final text = _commentController.text.trim();
-                        if (text.isEmpty) return;
-                        final dbId = widget.ticket["dbId"];
-                        if (dbId == null) return;
-                        FocusScope.of(context).unfocus();
-                        _commentController.clear();
-                        try {
-                          await _ticketService.addComment(
-                            ticketId: dbId is int
-                                ? dbId
-                                : int.parse(dbId.toString()),
-                            senderRole: "helpdesk",
-                            senderName: "Helpdesk Agent",
-                            message: text,
-                          );
-                          await _loadComments();
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text("Failed: $e"),
-                              backgroundColor: Colors.red,
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Preview Gambar
+                  if (_selectedImage != null)
+                    Stack(
+                      children: [
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          height: 60,
+                          width: 60,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            image: DecorationImage(
+                              image: FileImage(_selectedImage!),
+                              fit: BoxFit.cover,
                             ),
-                          );
-                        }
-                      },
-                      icon: const Icon(
-                        Icons.send_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
+                          ),
+                        ),
+                        Positioned(
+                          right: -10,
+                          top: -10,
+                          child: IconButton(
+                            icon: const Icon(Icons.cancel, color: _danger),
+                            onPressed: () =>
+                                setState(() => _selectedImage = null),
+                          ),
+                        ),
+                      ],
                     ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: fieldBg,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: TextField(
+                            controller: _commentController,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              color: textPrimary,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: "Add a comment...",
+                              hintStyle: GoogleFonts.plusJakartaSans(
+                                color: textSecondary,
+                                fontSize: 14,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _selectedImage != null
+                                      ? Icons.image_rounded
+                                      : Icons.attach_file_rounded,
+                                  color: _selectedImage != null
+                                      ? _primary
+                                      : textSecondary,
+                                  size: 20,
+                                ),
+                                onPressed: _pickImage,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      GestureDetector(
+                        onTap: _isSendingComment ? null : _sendComment,
+                        child: Container(
+                          width: 46,
+                          height: 46,
+                          decoration: BoxDecoration(
+                            color: _primary,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: _primary.withOpacity(0.35),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: _isSendingComment
+                              ? const Padding(
+                                  padding: EdgeInsets.all(13.0),
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.send_rounded,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -732,21 +971,30 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
     Map<String, dynamic> c,
     bool isDark,
     Color cardColor,
+    Color fieldBg,
+    Color textPrimary,
     Color textSecondary,
   ) {
-    final isAdmin = c["isAdmin"] as bool;
+    // 🔥 LOGIKA KANAN-KIRI FIX 🔥
+    final senderRole = (c["sender_role"] ?? "user").toString();
+    final isMe = senderRole == "helpdesk";
+
+    final attachment = c["attachment_url"] as String?;
+    final senderName = c["sender_name"] ?? "Unknown";
+    final timeStr = _formatDate(c["created_at"]);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: isAdmin
+        mainAxisAlignment: isMe
             ? MainAxisAlignment.end
             : MainAxisAlignment.start,
         children: [
-          if (!isAdmin) ...[_avatar(false), const SizedBox(width: 10)],
+          if (!isMe) ...[_avatar(false), const SizedBox(width: 10)],
           Flexible(
             child: Column(
-              crossAxisAlignment: isAdmin
+              crossAxisAlignment: isMe
                   ? CrossAxisAlignment.end
                   : CrossAxisAlignment.start,
               children: [
@@ -756,57 +1004,79 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: isAdmin
-                        ? const Color(0xFF2563EB)
-                        : (isDark
-                              ? const Color(0xFF1E293B)
-                              : const Color(0xFFEEF2FF)),
+                    color: isMe ? _primary : fieldBg,
                     borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(isAdmin ? 16 : 4),
-                      topRight: Radius.circular(isAdmin ? 4 : 16),
-                      bottomLeft: const Radius.circular(16),
-                      bottomRight: const Radius.circular(16),
+                      topLeft: Radius.circular(isMe ? 18 : 4),
+                      topRight: Radius.circular(isMe ? 4 : 18),
+                      bottomLeft: const Radius.circular(18),
+                      bottomRight: const Radius.circular(18),
                     ),
                   ),
-                  child: Text(
-                    c["message"],
-                    style: TextStyle(
-                      fontSize: 14,
-                      height: 1.5,
-                      color: isAdmin
-                          ? Colors.white
-                          : (isDark
-                                ? const Color(0xFFF1F5F9)
-                                : const Color(0xFF1E293B)),
-                    ),
+                  child: Column(
+                    crossAxisAlignment: isMe
+                        ? CrossAxisAlignment.end
+                        : CrossAxisAlignment.start,
+                    children: [
+                      // RENDER GAMBAR KALAU ADA
+                      if (attachment != null && attachment.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.network(
+                              attachment,
+                              width: 200,
+                              fit: BoxFit.cover,
+                              errorBuilder: (ctx, err, stack) => const Icon(
+                                Icons.broken_image,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                        ),
+                      // RENDER TEKS
+                      if (c["message"] != null &&
+                          c["message"].toString().isNotEmpty)
+                        Text(
+                          c["message"].toString(),
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 14,
+                            height: 1.5,
+                            color: isMe ? Colors.white : textPrimary,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  "${c["name"]} • ${c["time"]}",
-                  style: TextStyle(fontSize: 11, color: textSecondary),
+                  "$senderName • $timeStr",
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    color: textSecondary,
+                  ),
                 ),
               ],
             ),
           ),
-          if (isAdmin) ...[const SizedBox(width: 10), _avatar(true)],
+          if (isMe) ...[const SizedBox(width: 10), _avatar(true)],
         ],
       ),
     );
   }
 
-  Widget _avatar(bool isAdmin) {
+  Widget _avatar(bool isMe) {
     return Container(
-      width: 36,
-      height: 36,
+      width: 34,
+      height: 34,
       decoration: BoxDecoration(
-        color: isAdmin ? const Color(0xFF1E293B) : const Color(0xFFF59E0B),
+        color: isMe ? _primary : _warning,
         shape: BoxShape.circle,
       ),
       child: Icon(
-        isAdmin ? Icons.person : Icons.support_agent,
+        isMe ? Icons.support_agent_rounded : Icons.person_rounded,
         color: Colors.white,
-        size: 18,
+        size: 17,
       ),
     );
   }
@@ -814,26 +1084,26 @@ class _HelpdeskTicketDetailPageState extends State<HelpdeskTicketDetailPage> {
   Color _statusTextColor(String status) {
     switch (status) {
       case "OPEN":
-        return const Color(0xFFEF4444);
+        return _danger;
       case "IN PROGRESS":
-        return const Color(0xFF2563EB);
+        return _primary;
       case "CLOSED":
-        return const Color(0xFF16A34A);
+        return _success;
       default:
-        return const Color(0xFF0F172A);
+        return _textPrimaryLight;
     }
   }
 
   Color _statusBadgeBg(String status) {
     switch (status) {
       case "OPEN":
-        return const Color(0xFFFEE2E2);
+        return _dangerBg;
       case "IN PROGRESS":
-        return const Color(0xFFEFF6FF);
+        return const Color(0xFFEEECFF);
       case "CLOSED":
-        return const Color(0xFFDCFCE7);
+        return _successBg;
       default:
-        return const Color(0xFFF1F5F9);
+        return const Color(0xFFF0F1F6);
     }
   }
 }

@@ -37,17 +37,49 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
   bool _isLoadingAgents = true;
   String? _selectedHelpdesk;
 
+  // 🔥 Tambahan Variabel untuk menyimpan URL Attachment 🔥
+  String? _ticketAttachmentUrl;
+
   @override
   void initState() {
     super.initState();
+    // Coba ambil dari parameter yang dipassing dulu (kalau ada)
+    _ticketAttachmentUrl =
+        widget.ticket["attachment_url"] ?? widget.ticket["attachmentUrl"];
+
     _fetchComments();
     _fetchHelpdeskAgents();
+
+    // Tarik langsung URL gambar dari DB buat nambal error dari halaman sebelumnya
+    _fetchTicketAttachment();
   }
 
   @override
   void dispose() {
     _commentController.dispose();
     super.dispose();
+  }
+
+  // Fungsi tarikan ghaib biar gambar 100% muncul
+  Future<void> _fetchTicketAttachment() async {
+    try {
+      final dbId = widget.ticket["dbId"];
+      if (dbId == null) return;
+
+      final response = await Supabase.instance.client
+          .from('tickets')
+          .select('attachment_url')
+          .eq('id', dbId)
+          .single();
+
+      if (mounted && response['attachment_url'] != null) {
+        setState(() {
+          _ticketAttachmentUrl = response['attachment_url'];
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching ticket attachment: $e");
+    }
   }
 
   // Fungsi ambil gambar dari galeri
@@ -102,7 +134,16 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
       if (!mounted) return;
 
       setState(() {
-        _comments = data;
+        _comments = data.map<Map<String, dynamic>>((c) {
+          return {
+            "sender_role": c["sender_role"] ?? "user",
+            "sender_name": c["sender_name"] ?? "Unknown",
+            "created_at": c["created_at"] ?? "",
+            "message": c["message"] ?? "",
+            "attachment_url": c["attachment_url"],
+          };
+        }).toList();
+
         _isLoadingComments = false;
       });
     } catch (e) {
@@ -209,11 +250,12 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
     }
   }
 
+  // Buka link PDF / Dokumen di browser dengan aman
   Future<void> _launchURL(String url) async {
     final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
+    try {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -223,7 +265,7 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
   }
 
   String _formatDate(dynamic rawDate) {
-    if (rawDate == null) return "";
+    if (rawDate == null || rawDate.toString().isEmpty) return "";
     try {
       final dt = DateTime.parse(rawDate.toString()).toLocal();
       return "${dt.day}/${dt.month}/${dt.year} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}";
@@ -272,7 +314,8 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
     final status = (widget.ticket["status"] ?? "OPEN").toString().toUpperCase();
     final isClosed = status == "CLOSED" || status == "RESOLVED";
 
-    final attachmentUrl = widget.ticket["attachment_url"];
+    // 🔥 Gunakan nilai _ticketAttachmentUrl yang ditarik dari fungsi _fetchTicketAttachment
+    final attachmentUrl = _ticketAttachmentUrl;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -406,10 +449,11 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                             builder: (context) {
                               final urlString = attachmentUrl.toString();
                               final lowerUrl = urlString.toLowerCase();
+                              // Gunakan .contains() agar kebal query parameter dari Supabase
                               final isImage =
-                                  lowerUrl.endsWith('.jpg') ||
-                                  lowerUrl.endsWith('.jpeg') ||
-                                  lowerUrl.endsWith('.png');
+                                  lowerUrl.contains('.jpg') ||
+                                  lowerUrl.contains('.jpeg') ||
+                                  lowerUrl.contains('.png');
 
                               if (isImage) {
                                 return ClipRRect(
@@ -429,7 +473,7 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                                               borderRadius:
                                                   BorderRadius.circular(14),
                                             ),
-                                            child: Center(
+                                            child: const Center(
                                               child: CircularProgressIndicator(
                                                 color: primary,
                                               ),
@@ -450,7 +494,7 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                                     ),
                                     child: Row(
                                       children: [
-                                        Icon(
+                                        const Icon(
                                           Icons.insert_drive_file_outlined,
                                           color: primary,
                                           size: 32,
@@ -505,7 +549,7 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                             CircleAvatar(
                               radius: 16,
                               backgroundColor: primary.withOpacity(0.1),
-                              child: Icon(
+                              child: const Icon(
                                 Icons.person,
                                 size: 16,
                                 color: primary,
@@ -589,7 +633,7 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                         children: [
                           Row(
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.assignment_ind_outlined,
                                 color: primary,
                                 size: 20,
@@ -623,10 +667,8 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                               border: Border.all(color: borderColor),
                             ),
                             child: _isLoadingAgents
-                                ? Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
-                                    ),
+                                ? const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 12),
                                     child: Center(
                                       child: SizedBox(
                                         width: 20,
@@ -724,7 +766,9 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                   const SizedBox(height: 16),
 
                   if (_isLoadingComments)
-                    Center(child: CircularProgressIndicator(color: primary))
+                    const Center(
+                      child: CircularProgressIndicator(color: primary),
+                    )
                   else if (_comments.isEmpty)
                     Center(
                       child: Padding(
@@ -841,7 +885,7 @@ class _AdminTicketDetailPageState extends State<AdminTicketDetailPage> {
                                                     (ctx, err, stack) =>
                                                         const Icon(
                                                           Icons.broken_image,
-                                                          color: Colors.white,
+                                                          color: Colors.grey,
                                                         ),
                                               ),
                                             ),
