@@ -63,7 +63,6 @@ class TicketService {
 
   Future<Map<String, dynamic>> createTicket({
     required String title,
-    required String category,
     required String description,
     required String requestedPriority,
     String? attachmentUrl,
@@ -76,7 +75,6 @@ class TicketService {
           'ticket_code': ticketCode,
           'title': title,
           'description': description,
-          'category': category,
           'status': 'OPEN',
           'priority': null,
           'requested_priority': requestedPriority,
@@ -169,14 +167,14 @@ class TicketService {
     required String senderRole,
     required String senderName,
     required String message,
-    String? attachmentUrl, //tambah attachment
+    String? attachmentUrl,
   }) async {
     await _client.from('ticket_comments').insert({
       'ticket_id': ticketId,
       'sender_role': senderRole,
       'sender_name': senderName,
       'message': message,
-      'attachment_url': attachmentUrl, // Kirim ke database
+      'attachment_url': attachmentUrl,
     });
   }
 

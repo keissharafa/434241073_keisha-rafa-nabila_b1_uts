@@ -109,7 +109,7 @@ class _CreateTicketPageState extends State<CreateTicketPage> {
         title: titleController.text.trim().isEmpty
             ? "Untitled Ticket"
             : titleController.text.trim(),
-        category: "General",
+        // Kategori sudah dihapus dari sini agar sinkron dengan service
         description: descController.text.trim(),
         requestedPriority: selectedPriority.toUpperCase(),
         attachmentUrl: attachmentUrl,
