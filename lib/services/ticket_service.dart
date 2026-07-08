@@ -1,9 +1,11 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+/// Service class to handle all ticket-related database operations.
+/// Implements the Service Layer pattern to separate business logic from UI.
 class TicketService {
   final SupabaseClient _client = Supabase.instance.client;
 
-  // 1. FUNGSI REAL-TIME (Sudah fix sintaks)
+  /// Subscribes to real-time notification changes based on the target role.
   RealtimeChannel subscribeToNotifications(
     String roleTarget,
     Function(Map<String, dynamic>) onNewNotification,
@@ -26,7 +28,7 @@ class TicketService {
         .subscribe();
   }
 
-  // 2. FUNGSI STATISTIK (Versi aman tanpa error FetchOptions)
+  /// Retrieves the count of tickets filtered by status or assignee.
   Future<int> getTicketCount({String? status, String? assignedTo}) async {
     var query = _client.from('tickets').select('id');
 
@@ -38,11 +40,10 @@ class TicketService {
     }
 
     final response = await query;
-    // Menggunakan .length langsung dari response list agar kompatibel dengan semua versi SDK
     return (response as List).length;
   }
 
-  // 3. FUNGSI TIKET (User & Admin)
+  /// Fetches a list of tickets for regular users.
   Future<List<Map<String, dynamic>>> getUserTickets() async {
     final response = await _client
         .from('tickets')
@@ -52,6 +53,7 @@ class TicketService {
     return List<Map<String, dynamic>>.from(response);
   }
 
+  /// Fetches a list of tickets for administrative purposes.
   Future<List<Map<String, dynamic>>> getAdminTickets() async {
     final response = await _client
         .from('tickets')
@@ -61,6 +63,7 @@ class TicketService {
     return List<Map<String, dynamic>>.from(response);
   }
 
+  /// Creates a new ticket entry in the database.
   Future<Map<String, dynamic>> createTicket({
     required String title,
     required String description,
@@ -87,6 +90,7 @@ class TicketService {
         .select()
         .single();
 
+    // Create an initial notification for admins/helpdesk
     await _client.from('notifications').insert({
       'role_target': 'admin_helpdesk',
       'title': 'New Ticket Created',
@@ -100,6 +104,7 @@ class TicketService {
     return Map<String, dynamic>.from(insertedTicket);
   }
 
+  /// Updates ticket status, priority, and assignee.
   Future<Map<String, dynamic>> updateTicket({
     required int id,
     required String status,
@@ -150,6 +155,7 @@ class TicketService {
     return Map<String, dynamic>.from(updatedTicket);
   }
 
+  /// Retrieves notifications for a specific user role.
   Future<List<Map<String, dynamic>>> getNotifications({
     required String roleTarget,
   }) async {
@@ -162,6 +168,7 @@ class TicketService {
     return List<Map<String, dynamic>>.from(response);
   }
 
+  /// Adds a new comment to an existing ticket.
   Future<void> addComment({
     required int ticketId,
     required String senderRole,
@@ -178,6 +185,7 @@ class TicketService {
     });
   }
 
+  /// Retrieves all comments associated with a specific ticket.
   Future<List<Map<String, dynamic>>> getComments({
     required int ticketId,
   }) async {
@@ -188,5 +196,35 @@ class TicketService {
         .order('created_at', ascending: true);
 
     return List<Map<String, dynamic>>.from(response);
+  }
+
+  // --- NEW FUNCTIONS FOR SRS COMPLIANCE ---
+
+  /// Uploads an attachment to Supabase Storage and returns the public URL.
+  Future<String> uploadAttachment(var file, String fileName) async {
+    await _client.storage.from('attachments').upload(fileName, file);
+    return _client.storage.from('attachments').getPublicUrl(fileName);
+  }
+
+  /// Retrieves detailed information for a specific ticket.
+  Future<Map<String, dynamic>> getTicketDetail(int ticketId) async {
+    final response = await _client
+        .from('tickets')
+        .select()
+        .eq('id', ticketId)
+        .single();
+    return Map<String, dynamic>.from(response);
+  }
+
+  /// Deletes a ticket and its associated data (comments/notifications).
+  Future<void> deleteTicket(int ticketId) async {
+    await _client.from('tickets').delete().eq('id', ticketId);
+    await _client.from('notifications').delete().eq('ticket_id', ticketId);
+    await _client.from('ticket_comments').delete().eq('ticket_id', ticketId);
+  }
+
+  /// Updates the active status of a user account.
+  Future<void> deactivateUser(String userId) async {
+    await _client.from('users').update({'is_active': false}).eq('id', userId);
   }
 }

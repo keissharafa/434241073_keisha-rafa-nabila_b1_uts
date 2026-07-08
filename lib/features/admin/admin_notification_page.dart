@@ -23,6 +23,21 @@ class _AdminNotificationPageState extends State<AdminNotificationPage> {
   List<Map<String, dynamic>> _notifications = [];
   bool _isLoading = true;
 
+  static const List<String> _monthNames = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mei',
+    'Jun',
+    'Jul',
+    'Agu',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Des',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -61,12 +76,70 @@ class _AdminNotificationPageState extends State<AdminNotificationPage> {
 
       if (diff.inMinutes < 1) return "Just now";
       if (diff.inMinutes < 60) return "${diff.inMinutes} mins ago";
-      if (diff.inHours < 24) return "${diff.inHours} hours ago";
-      if (diff.inDays == 1) return "Yesterday";
-      return "${diff.inDays} days ago";
+
+      // Pakai selisih kalender (bukan durasi mentah 24 jam) biar konsisten
+      // dengan pengelompokan section (Today / Yesterday / tanggal).
+      final today = DateTime(now.year, now.month, now.day);
+      final targetDay = DateTime(
+        createdAt.year,
+        createdAt.month,
+        createdAt.day,
+      );
+      final dayDiff = today.difference(targetDay).inDays;
+
+      if (dayDiff <= 0) return "${diff.inHours} hours ago";
+      if (dayDiff == 1) return "Yesterday";
+      return "$dayDiff days ago";
     } catch (_) {
       return "Just now";
     }
+  }
+
+  // --- Grouping helpers ---
+
+  DateTime? _parseDate(dynamic rawDate) {
+    if (rawDate == null) return null;
+    try {
+      return DateTime.parse(rawDate.toString()).toLocal();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _sectionLabel(DateTime? date) {
+    if (date == null) return "Earlier";
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final targetDay = DateTime(date.year, date.month, date.day);
+
+    if (targetDay == today) return "Today";
+    if (targetDay == yesterday) return "Yesterday";
+
+    final month = _monthNames[date.month - 1];
+    return "${date.day.toString().padLeft(2, '0')} $month ${date.year}";
+  }
+
+  /// Groups notifications (already assumed sorted newest first) into a flat
+  /// list of either section header strings or notification maps, preserving
+  /// original order within each group.
+  List<dynamic> _buildGroupedItems(List<Map<String, dynamic>> notifications) {
+    final List<dynamic> items = [];
+    String? lastLabel;
+
+    for (final notif in notifications) {
+      final date = _parseDate(notif['created_at']);
+      final label = _sectionLabel(date);
+
+      if (label != lastLabel) {
+        items.add(label);
+        lastLabel = label;
+      }
+      items.add(notif);
+    }
+
+    return items;
   }
 
   void _onNavTap(int index) {
@@ -174,6 +247,8 @@ class _AdminNotificationPageState extends State<AdminNotificationPage> {
         ? Colors.black.withOpacity(0.25)
         : const Color(0xFF6C63FF).withOpacity(0.06);
 
+    final groupedItems = _buildGroupedItems(_notifications);
+
     return Scaffold(
       backgroundColor: bgColor,
       extendBody: true, // Wajib untuk floating navbar
@@ -189,22 +264,23 @@ class _AdminNotificationPageState extends State<AdminNotificationPage> {
                 children: [
                   Row(
                     children: [
+                      // --- LOGO CONCIERGE ---
                       Container(
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF14142B),
-                          borderRadius: BorderRadius.circular(14),
+                          color: const Color(0xFF2563EB), // Biru Splash Screen
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
-                          Icons.admin_panel_settings,
+                          Icons.confirmation_num, // Ikon Tiket
                           color: Colors.white,
                           size: 20,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        "Admin Hub",
+                        "Concierge", // Nama diubah dari Admin Hub
                         style: GoogleFonts.plusJakartaSans(
                           color: primary,
                           fontWeight: FontWeight.bold,
@@ -299,9 +375,31 @@ class _AdminNotificationPageState extends State<AdminNotificationPage> {
                                 20,
                                 100,
                               ), // Spasi bawah ditambah
-                              itemCount: _notifications.length,
+                              itemCount: groupedItems.length,
                               itemBuilder: (context, index) {
-                                final notif = _notifications[index];
+                                final item = groupedItems[index];
+
+                                // --- Section header (Today / Yesterday / date) ---
+                                if (item is String) {
+                                  return Padding(
+                                    padding: EdgeInsets.only(
+                                      top: index == 0 ? 0 : 16,
+                                      bottom: 10,
+                                    ),
+                                    child: Text(
+                                      item,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: textSecondary,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                  );
+                                }
+
+                                // --- Notification card ---
+                                final notif = item as Map<String, dynamic>;
                                 final isRead = notif['is_read'] == true;
                                 final notifType =
                                     notif['notification_type'] as String?;

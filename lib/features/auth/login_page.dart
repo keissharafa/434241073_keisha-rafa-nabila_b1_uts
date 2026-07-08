@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../dashboard/dashboard_page.dart';
@@ -22,24 +23,36 @@ class _LoginPageState extends State<LoginPage> {
   bool _obscurePassword = true;
   bool _isLoading = false; // Tambahan untuk efek loading di tombol
 
+  // ---- Style guide constants ----
+  static const _bgLight = Color(0xFFEDEFF7);
+  static const _surfaceLight = Color(0xFFFFFFFF);
+  static const _primary = Color(0xFF6C63FF);
+  static const _textPrimaryLight = Color(0xFF14142B);
+  static const _textSecondaryLight = Color(0xFF92929D);
+  static const _fieldBgLight = Color(0xFFF1E9FF); // pastel "Pay" category
+  static const _payIcon = Color(0xFF8B5CF6);
+  static const _danger = Color(0xFFF45B69);
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
-    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final textPrimary = isDark
-        ? const Color(0xFFF1F5F9)
-        : const Color(0xFF0F172A);
-    final textSecondary = isDark ? const Color(0xFF94A3B8) : Colors.grey[500]!;
-    final fieldBg = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
-    final iconColor = isDark ? const Color(0xFF64748B) : Colors.grey[500]!;
-    final hintColor = isDark ? const Color(0xFF64748B) : Colors.grey[400]!;
-    final labelColor = isDark
-        ? const Color(0xFFCBD5E1)
-        : const Color(0xFF0F172A);
-    final footerColor = isDark ? const Color(0xFF64748B) : Colors.grey[400]!;
-    final shadowColor = const Color.fromRGBO(0, 0, 0, 0.06);
+    final bgColor = isDark ? const Color(0xFF14142B) : _bgLight;
+    final cardColor = isDark ? const Color(0xFF1F1F3A) : _surfaceLight;
+    final textPrimary = isDark ? const Color(0xFFF4F4FB) : _textPrimaryLight;
+    final textSecondary = isDark
+        ? const Color(0xFFA0A0B8)
+        : _textSecondaryLight;
+    final fieldBg = isDark ? const Color(0xFF2A2A55) : _fieldBgLight;
+    final iconColor = isDark ? const Color(0xFFA0A0B8) : _payIcon;
+    final hintColor = isDark ? const Color(0xFFA0A0B8) : _textSecondaryLight;
+    final labelColor = isDark ? const Color(0xFFF4F4FB) : _textPrimaryLight;
+    final footerColor = isDark
+        ? const Color(0xFF6E6E8A)
+        : const Color(0xFFB4B4C6);
+    final shadowColor = isDark
+        ? Colors.black.withOpacity(0.3)
+        : const Color(0xFF6C63FF).withOpacity(0.09);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -55,8 +68,8 @@ class _LoginPageState extends State<LoginPage> {
                 boxShadow: [
                   BoxShadow(
                     color: shadowColor,
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
+                    blurRadius: 30,
+                    offset: const Offset(0, 12),
                   ),
                 ],
               ),
@@ -67,22 +80,22 @@ class _LoginPageState extends State<LoginPage> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(6),
+                        padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF2563EB),
-                          borderRadius: BorderRadius.circular(8),
+                          color: _primary,
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
-                          Icons.confirmation_num,
+                          Icons.confirmation_num_rounded,
                           color: Colors.white,
                           size: 18,
                         ),
                       ),
                       const SizedBox(width: 10),
-                      const Text(
+                      Text(
                         "Concierge",
-                        style: TextStyle(
-                          color: Color(0xFF2563EB),
+                        style: GoogleFonts.plusJakartaSans(
+                          color: _primary,
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
                         ),
@@ -94,10 +107,11 @@ class _LoginPageState extends State<LoginPage> {
 
                   Text(
                     "Welcome back",
-                    style: TextStyle(
-                      fontSize: 28,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 26,
                       fontWeight: FontWeight.bold,
                       color: textPrimary,
+                      letterSpacing: -0.3,
                     ),
                   ),
 
@@ -105,7 +119,10 @@ class _LoginPageState extends State<LoginPage> {
 
                   Text(
                     "Enter your credentials to manage your tickets.",
-                    style: TextStyle(color: textSecondary, fontSize: 14),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: textSecondary,
+                      fontSize: 14,
+                    ),
                   ),
 
                   const SizedBox(height: 28),
@@ -113,19 +130,25 @@ class _LoginPageState extends State<LoginPage> {
                   // Email Input
                   Text(
                     "Email",
-                    style: TextStyle(
+                    style: GoogleFonts.plusJakartaSans(
                       color: labelColor,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: emailController,
-                    style: TextStyle(color: textPrimary, fontSize: 14),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: textPrimary,
+                      fontSize: 14,
+                    ),
                     decoration: InputDecoration(
                       hintText: "e.g. alex@gmail.com",
-                      hintStyle: TextStyle(color: hintColor, fontSize: 14),
+                      hintStyle: GoogleFonts.plusJakartaSans(
+                        color: hintColor,
+                        fontSize: 14,
+                      ),
                       prefixIcon: Icon(
                         Icons.email_outlined,
                         color: iconColor,
@@ -138,17 +161,17 @@ class _LoginPageState extends State<LoginPage> {
                         horizontal: 16,
                       ),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                         borderSide: BorderSide.none,
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                         borderSide: BorderSide.none,
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                         borderSide: const BorderSide(
-                          color: Color(0xFF2563EB),
+                          color: _primary,
                           width: 1.5,
                         ),
                       ),
@@ -163,20 +186,21 @@ class _LoginPageState extends State<LoginPage> {
                     children: [
                       Text(
                         "Password",
-                        style: TextStyle(
+                        style: GoogleFonts.plusJakartaSans(
                           color: labelColor,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w600,
                           fontSize: 14,
                         ),
                       ),
                       GestureDetector(
                         onTap: () {},
-                        child: const Text(
+                        child: Text(
                           "FORGOT PASSWORD?",
-                          style: TextStyle(
-                            color: Color(0xFF2563EB),
+                          style: GoogleFonts.plusJakartaSans(
+                            color: _primary,
                             fontWeight: FontWeight.bold,
                             fontSize: 11,
+                            letterSpacing: 0.3,
                           ),
                         ),
                       ),
@@ -188,10 +212,13 @@ class _LoginPageState extends State<LoginPage> {
                   TextField(
                     controller: passwordController,
                     obscureText: _obscurePassword,
-                    style: TextStyle(color: textPrimary, fontSize: 14),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: textPrimary,
+                      fontSize: 14,
+                    ),
                     decoration: InputDecoration(
                       prefixIcon: Icon(
-                        Icons.lock_outline,
+                        Icons.lock_outline_rounded,
                         color: iconColor,
                         size: 20,
                       ),
@@ -214,44 +241,55 @@ class _LoginPageState extends State<LoginPage> {
                         horizontal: 16,
                       ),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                         borderSide: BorderSide.none,
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                         borderSide: BorderSide.none,
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                         borderSide: const BorderSide(
-                          color: Color(0xFF2563EB),
+                          color: _primary,
                           width: 1.5,
                         ),
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
 
                   // Checkbox
                   Row(
                     children: [
-                      Checkbox(
-                        value: _keepLoggedIn,
-                        activeColor: const Color(0xFF2563EB),
-                        checkColor: Colors.white,
-                        side: BorderSide(
-                          color: isDark
-                              ? const Color(0xFF475569)
-                              : Colors.grey[400]!,
-                          width: 1.5,
+                      SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: Checkbox(
+                          value: _keepLoggedIn,
+                          activeColor: _primary,
+                          checkColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          side: BorderSide(
+                            color: isDark
+                                ? const Color(0xFF4A4A70)
+                                : const Color(0xFFD8D2F0),
+                            width: 1.5,
+                          ),
+                          onChanged: (value) =>
+                              setState(() => _keepLoggedIn = value ?? false),
                         ),
-                        onChanged: (value) =>
-                            setState(() => _keepLoggedIn = value ?? false),
                       ),
+                      const SizedBox(width: 8),
                       Text(
                         "Keep me logged in",
-                        style: TextStyle(color: labelColor, fontSize: 14),
+                        style: GoogleFonts.plusJakartaSans(
+                          color: labelColor,
+                          fontSize: 14,
+                        ),
                       ),
                     ],
                   ),
@@ -261,14 +299,15 @@ class _LoginPageState extends State<LoginPage> {
                   // 🔵 LOGIN BUTTON
                   SizedBox(
                     width: double.infinity,
-                    height: 52,
+                    height: 54,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
+                        backgroundColor: _primary,
                         foregroundColor: Colors.white,
                         elevation: 0,
+                        shadowColor: Colors.transparent,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                       ),
                       onPressed: _isLoading
@@ -377,9 +416,9 @@ class _LoginPageState extends State<LoginPage> {
                                 strokeWidth: 2,
                               ),
                             )
-                          : const Text(
+                          : Text(
                               "Login",
-                              style: TextStyle(
+                              style: GoogleFonts.plusJakartaSans(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -395,7 +434,10 @@ class _LoginPageState extends State<LoginPage> {
                     children: [
                       Text(
                         "Don't have an account? ",
-                        style: TextStyle(color: textSecondary, fontSize: 14),
+                        style: GoogleFonts.plusJakartaSans(
+                          color: textSecondary,
+                          fontSize: 14,
+                        ),
                       ),
                       GestureDetector(
                         onTap: () {
@@ -407,10 +449,10 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           );
                         },
-                        child: const Text(
+                        child: Text(
                           "Register",
-                          style: TextStyle(
-                            color: Color(0xFF2563EB),
+                          style: GoogleFonts.plusJakartaSans(
+                            color: _primary,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
@@ -424,7 +466,10 @@ class _LoginPageState extends State<LoginPage> {
                   Center(
                     child: Text(
                       "Privacy Policy    Terms of Service    Help Center",
-                      style: TextStyle(fontSize: 11, color: footerColor),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        color: footerColor,
+                      ),
                     ),
                   ),
                 ],
@@ -442,12 +487,21 @@ class _LoginPageState extends State<LoginPage> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.error_outline, color: Colors.white, size: 18),
+            const Icon(
+              Icons.error_outline_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
             const SizedBox(width: 10),
-            Expanded(child: Text(message)),
+            Expanded(
+              child: Text(
+                message,
+                style: GoogleFonts.plusJakartaSans(color: Colors.white),
+              ),
+            ),
           ],
         ),
-        backgroundColor: const Color(0xFFEF4444),
+        backgroundColor: _danger,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),

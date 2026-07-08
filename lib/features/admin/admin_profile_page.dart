@@ -1,9 +1,11 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../auth/login_page.dart';
-import 'admin_dashboard_page.dart'; // Sesuaikan import jika berbeda
+import 'admin_dashboard_page.dart';
 import 'admin_notification_page.dart';
+import 'admin_user_management_page.dart';
 
 class AdminProfilePage extends StatefulWidget {
   final Function(bool) toggleTheme;
@@ -28,7 +30,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
   Future<void> _loadUserProfile() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _userName = prefs.getString('user_name') ?? "System Admin";
+      _userName = prefs.getString('user_name') ?? "Admin";
       _userEmail = prefs.getString('user_email') ?? "admin@gmail.com";
     });
   }
@@ -107,8 +109,6 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
         ),
       );
     } else if (index == 1) {
-      // Jika Admin punya halaman tiket khusus, arahkan ke sana.
-      // Sementara kita kembalikan ke Dashboard.
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -500,11 +500,80 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
     );
   }
 
+  // ── MESH GRADIENT BACKGROUND (visual only, no logic) ──
+  Widget _buildMeshBlob(Color color, double size, double opacity) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [color.withOpacity(opacity), color.withOpacity(0)],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMeshGradientBackground(bool isDark) {
+    final baseColor = isDark
+        ? const Color(0xFF14142B)
+        : const Color(0xFFEDEFF7);
+    final blobPrimary = const Color(0xFF6C63FF); // primary
+    final blobLavenderLight = isDark
+        ? const Color(0xFF8B7FFF)
+        : const Color(0xFFB8AEFF); // lavender muda
+    final blobLavenderDeep = isDark
+        ? const Color(0xFF4C3FE0)
+        : const Color(0xFF9D8DFF); // lavender lebih pekat
+
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        bottomLeft: Radius.circular(32),
+        bottomRight: Radius.circular(32),
+      ),
+      child: Container(
+        color: baseColor,
+        child: Stack(
+          children: [
+            Positioned(
+              top: -70,
+              left: -50,
+              child: _buildMeshBlob(blobPrimary, 260, isDark ? 0.38 : 0.30),
+            ),
+            Positioned(
+              top: -30,
+              right: -70,
+              child: _buildMeshBlob(
+                blobLavenderLight,
+                220,
+                isDark ? 0.30 : 0.26,
+              ),
+            ),
+            Positioned(
+              bottom: -90,
+              left: 30,
+              child: _buildMeshBlob(
+                blobLavenderDeep,
+                240,
+                isDark ? 0.26 : 0.22,
+              ),
+            ),
+            // Blur biar blob-nya nyatu jadi "mesh"
+            BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
+              child: Container(color: Colors.transparent),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // ── STYLE GUIDE PALETTE (sama dengan Dashboard & Notification) ──
+    // ── STYLE GUIDE PALETTE ──
     const primary = Color(0xFF6C63FF);
 
     final bgColor = isDark ? const Color(0xFF14142B) : const Color(0xFFEDEFF7);
@@ -531,134 +600,167 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // HEADER
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // ── HEADER + USER CARD DENGAN MESH GRADIENT DI BELAKANGNYA ──
+              Stack(
+                clipBehavior: Clip.none,
                 children: [
-                  Row(
+                  Positioned(
+                    top: -16,
+                    left: -20,
+                    right: -20,
+                    height: 250,
+                    child: _buildMeshGradientBackground(isDark),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF14142B),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: const Icon(
-                          Icons.admin_panel_settings_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        'Admin Hub',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: primary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    "Profile",
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 28),
-
-              // USER CARD
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 24,
-                  horizontal: 20,
-                ),
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  borderRadius: BorderRadius.circular(22),
-                  border: isDark ? Border.all(color: borderColor) : null,
-                  boxShadow: isDark
-                      ? []
-                      : [
-                          BoxShadow(
-                            color: shadowColor,
-                            blurRadius: 20,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        color: primary,
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: const Icon(
-                        Icons.shield_rounded,
-                        color: Colors.white,
-                        size: 36,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      // HEADER DENGAN LOGO SPLASH SCREEN
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Row(
                             children: [
-                              Text(
-                                _userName,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 17,
-                                  color: textPrimary,
+                              // --- LOGO CONCIERGE ---
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF2563EB,
+                                  ), // Biru Splash Screen
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.confirmation_num, // Ikon Tiket
+                                  color: Colors.white,
+                                  size: 20,
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFE1F9EE),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  'ADMIN',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: const Color(0xFF21D07B),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'Concierge',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: primary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                  letterSpacing: -0.3,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 4),
                           Text(
-                            _userEmail,
+                            "Profile",
                             style: GoogleFonts.plusJakartaSans(
-                              color: textSecondary,
-                              fontSize: 13,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
+                      const SizedBox(height: 28),
+
+                      // USER CARD
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 24,
+                          horizontal: 20,
+                        ),
+                        decoration: BoxDecoration(
+                          color: cardColor,
+                          borderRadius: BorderRadius.circular(22),
+                          border: isDark
+                              ? Border.all(color: borderColor)
+                              : null,
+                          boxShadow: isDark
+                              ? []
+                              : [
+                                  BoxShadow(
+                                    color: shadowColor,
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                        ),
+                        child: Row(
+                          children: [
+                            // --- AVATAR INISIAL NAMA ---
+                            Container(
+                              width: 72,
+                              height: 72,
+                              decoration: BoxDecoration(
+                                color: primary,
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  _userName.isNotEmpty
+                                      ? _userName.substring(0, 1).toUpperCase()
+                                      : 'A',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: Colors.white,
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        _userName,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 17,
+                                          color: textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFE1F9EE),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'ADMIN',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            color: const Color(0xFF21D07B),
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _userEmail,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: textSecondary,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
 
               const SizedBox(height: 24),
@@ -702,7 +804,15 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                       titleColor: textPrimary,
                       subtitleColor: textSecondary,
                       chevronColor: textSecondary,
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const AdminUserManagementPage(),
+                          ),
+                        );
+                      },
                     ),
                     Divider(
                       height: 1,
@@ -878,24 +988,44 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
             elevation: 0,
             selectedItemColor: primary,
             unselectedItemColor: textSecondary,
-            showSelectedLabels: false,
-            showUnselectedLabels: false,
+            showSelectedLabels: true,
+            showUnselectedLabels: true,
+            selectedLabelStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+            unselectedLabelStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
             items: const [
               BottomNavigationBarItem(
-                icon: Icon(Icons.grid_view_rounded),
-                label: 'HOME',
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.grid_view_rounded, size: 24),
+                ),
+                label: "Home",
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.confirmation_num_outlined),
-                label: 'TICKETS',
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.confirmation_num_outlined, size: 24),
+                ),
+                label: "Ticket",
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.notifications_none_rounded),
-                label: 'ALERTS',
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.notifications_none, size: 24),
+                ),
+                label: "Notif",
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline_rounded),
-                label: 'PROFILE',
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 4, top: 4),
+                  child: Icon(Icons.person_outline, size: 24),
+                ),
+                label: "Profile",
               ),
             ],
           ),
